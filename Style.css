@@ -1,0 +1,16 @@
+h1{
+    text-align: center;
+}
+
+.GameDiv{
+    background-color:#4d4c4c;
+    box-shadow: 5px 5px;
+    width: fit-content;
+    height: fit-content;
+    margin: 0 auto;
+}
+
+canvas{
+    background-color: #ffffff00;
+    vertical-align: bottom;
+}
