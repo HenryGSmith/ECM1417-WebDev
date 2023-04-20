@@ -1,16 +1,99 @@
-h1{
+h1 {
     text-align: center;
 }
 
-.GameDiv{
-    background-color:#4d4c4c;
+.navbar a{
+    font-family: Verdana !important;
+    font-size: 12px !important;
+}
+
+.bg-primary{
+    background-color: blue !important;
+}
+
+.nav-link {
+    transition: all 0.2s;
+    position: relative;
+}
+
+.nav-link::after{
+    content: '';
+    opacity: 0;
+    transition: all 0.2s;
+    height: 2px;
+    width: 100%;
+    background-color: white;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+
+.nav-link:hover {
+    color:white;
+}
+
+.nav-link:hover::after{
+    opacity: 1;
+}
+
+.btn-primary{
+    background-color: #21897e;
+}
+.btn-primary:hover {
+    background-color: #293e55;
+}
+
+.btn-link{
+    color: white;
+}
+.btn-link:hover{
+    color: #293e55;
+}
+
+html, body{
+    height: 100%;
+    background-color: black;
+}
+
+.center{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+}
+
+#main{
+    height: 90vh;
+    background-image: url('arcade-unsplash.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center center;
+    background-size: cover;
+}
+
+#welcome{
+    background-color: #016dcd;
+    color: white;
+    width:fit-content;
+    padding: 50px 100px;
+    align-content: center !important;
+    text-align: center;
+}
+
+#click-to-play{
+    margin: 1vh;
+}
+
+/* game window */
+.GameDiv {
+    background-color: #4d4c4c;
     box-shadow: 5px 5px;
     width: fit-content;
     height: fit-content;
-    margin: 0 auto;
 }
 
-canvas{
+canvas {
     background-color: #ffffff00;
     vertical-align: bottom;
 }
