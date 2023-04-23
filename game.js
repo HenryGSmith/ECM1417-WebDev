@@ -4,7 +4,7 @@
 const canvas = document.querySelector("canvas");
 
 // internal canvas space dimenesions
-const canvasDims = { width: 300, height: 185 };
+const canvasDims = { width: 600, height: 185 * 2 };
 canvas.width = canvasDims.width;
 canvas.height = canvasDims.height;
 
@@ -28,7 +28,7 @@ function resizeCanvas() {
     var distToTop = window.pageYOffset + canvas.getBoundingClientRect().top;
     var vh = window.innerHeight / 100;
     var vw = window.innerWidth / 100;
-    var height = window.innerHeight - (distToTop + vh)
+    var height = window.innerHeight - (distToTop + vh * 10)
 
     if (height > dims.height) {
         // base height off of width
@@ -54,6 +54,15 @@ function lerp(startValue, endValue, t) {
     return (startValue + (endValue - startValue) * t);
 }
 
+function screenToWorldSpace(x, y) {
+    // screen space 0 to 1 on width and height
+    // world space = canvas space
+    xWorld = lerp(0, canvasDims.width, x);
+    yWorld = lerp(0, canvasDims.height, y);
+
+    return [xWorld, yWorld];
+}
+
 //====================================================
 //================= INPUT MANAGEMENT =================
 
@@ -67,6 +76,11 @@ canvas.addEventListener("mousedown", (e) => {
         for (let p in CARDS) {
             if (CARDS[p].isZoomed) {
                 CARDS[p].startFlipAnim();
+            }
+        }
+        for (let i in UI){
+            if(UI[i].isZoomed){
+                UI[i].onClick();
             }
         }
     }
@@ -89,9 +103,100 @@ function square(x, y) {
 //----------------------------------------------------
 //------------------ OBJECT SPRITES ------------------
 
-class card {
-    constructor(x, y, w, h, zw = 50, zh = 60) {
+class startButton {
+    constructor(x, y, w, h, zw, zh, text = "") {
         this.anchor = { x: x, y: y };
+        this.offset = { x: 0, y: 0 };
+        this.originalDims = { w: w, h: h };
+        this.currentDims = { w: w, h: h };
+        this.zoomedDims = { w: zw, h: zh }
+        this.isZoomed = false;
+        this.text = text;
+
+        this.zoomInAnimRunning = false;
+        this.zoomOutAnimRunning = false;
+
+        this.AnimCounter = { zoomIn: 0, zoomOut: 0 };
+    }
+
+    //animations
+    zoomInAnim(speed = 0.1) {
+        if (this.AnimCounter.zoomIn < 1) {
+            this.currentDims.w = lerp(this.originalDims.w, this.zoomedDims.w, this.AnimCounter.zoomIn);
+            this.currentDims.h = lerp(this.originalDims.h, this.zoomedDims.h, this.AnimCounter.zoomIn);
+            this.offset.x = (this.originalDims.w - this.currentDims.w) / 2;
+            this.offset.y = (this.originalDims.h - this.currentDims.h) / 2;
+            this.AnimCounter.zoomIn += speed;
+        } else {
+            this.AnimCounter.zoomIn = 0;
+            this.zoomInAnimRunning = false;
+        }
+    }
+
+    zoomOutAnim(speed = 0.1) {
+        if (this.AnimCounter.zoomOut <= 1) {
+            this.currentDims.w = lerp(this.zoomedDims.w, this.originalDims.w, this.AnimCounter.zoomOut);
+            this.currentDims.h = lerp(this.zoomedDims.h, this.originalDims.h, this.AnimCounter.zoomOut);
+            this.offset.y = (this.originalDims.h - this.currentDims.h) / 2;
+            this.offset.x = (this.originalDims.w - this.currentDims.w) / 2;
+            this.AnimCounter.zoomOut += speed;
+        } else {
+            this.AnimCounter.zoomOut = 0;
+            this.zoomOutAnimRunning = false;
+        }
+    }
+
+    onClick(){
+        console.log("game starting");
+    }
+
+    // object management
+    update() {
+        // hovering over the button
+        var xBound = GLOBALS.mouse.x >= this.anchor.x + this.offset.x && GLOBALS.mouse.x <= this.anchor.x + this.offset.x + this.currentDims.w;
+        var yBound = GLOBALS.mouse.y >= this.anchor.y + this.offset.y && GLOBALS.mouse.y <= this.anchor.y + this.offset.y + this.currentDims.h;
+        if (!this.flipAnimRunning) {
+            if (xBound && yBound) {
+                if (!this.zoomInAnimRunning && !this.isZoomed) {
+                    this.isZoomed = true;
+                    this.zoomInAnimRunning = true;
+                }
+            } else if (this.isZoomed) {
+                this.isZoomed = false;
+                this.zoomOutAnimRunning = true;
+            }
+        }
+    }
+    render() {
+        //update behaviour
+        this.update();
+        //run animations
+        if (this.zoomInAnimRunning) {
+            this.zoomInAnim();
+        }
+        if (this.zoomOutAnimRunning) {
+            this.zoomOutAnim();
+        }
+
+        //draw sprite to canvas
+        var x = this.anchor.x + this.offset.x;
+        var y = this.anchor.y + this.offset.y;
+        ctx.fillStyle = "#f49d37";
+        ctx.beginPath();
+        ctx.roundRect(x, y, this.currentDims.w, this.currentDims.h, 10);
+        ctx.fill();
+        ctx.font = "30px Verdana";
+        ctx.fillStyle = "black";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+        ctx.fillText(this.text, x + this.currentDims.w/2, y+this.currentDims.h/2);
+    }
+}
+
+class card {
+    constructor(x, y, w, h, zw = 50, zh = 60, corner = 5) {
+        this.anchor = { x: x, y: y };
+        this.corner = corner;
         this.offset = { x: 0, y: 0 };
         this.originalDims = { w: w, h: h };
         this.currentDims = { w: w, h: h };
@@ -200,7 +305,9 @@ class card {
         var x = this.anchor.x + this.offset.x;
         var y = this.anchor.y + this.offset.y;
         ctx.fillStyle = (this.faceDown) ? "green" : "red";
-        ctx.fillRect(x, y, this.currentDims.w, this.currentDims.h);
+        ctx.beginPath();
+        ctx.roundRect(x, y, this.currentDims.w, this.currentDims.h, this.corner);
+        ctx.fill();
     }
 }
 
@@ -216,6 +323,14 @@ const GLOBALS = {
 //storage of all interactable elements
 const CARDS = [];
 CARDS.push(new card(10, 10, 38, 50, 48, 60));
+
+const UI = [];
+var buttonLocation = screenToWorldSpace(0.3, 0.4);
+var buttonSize = screenToWorldSpace(0.4, 0.2);
+var buttonZoomed = screenToWorldSpace(0.42, 0.22);
+UI.push(new startButton(
+    buttonLocation[0], buttonLocation[1], buttonSize[0], buttonSize[1], buttonZoomed[0], buttonZoomed[1],
+    "Start the game"));
 
 
 // applies initial settings
@@ -233,6 +348,9 @@ function renderProps() {
     for (let p in CARDS) {
         CARDS[p].render();
     }
+    for (let i in UI) {
+        UI[i].render();
+    }
 }
 
 // renders out each frame
@@ -248,5 +366,7 @@ function startFrames() {
     window.requestAnimationFrame(startFrames);
 }
 
-init(); // initialize the game
-startFrames(); // start running frames
+window.onload = () => {
+    init(); // initialize the game
+    startFrames(); // start running frames
+}

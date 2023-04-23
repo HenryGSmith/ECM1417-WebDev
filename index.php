@@ -1,3 +1,12 @@
+<?php
+include("./cookieManagement.php");
+
+if(!isset($_SESSION["registered"])){
+  session_start();
+  saveDataInSession();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="zxx">
 
@@ -19,8 +28,13 @@
   <div id="main">
     <div id="welcome" class="center">
       <h1>Welcome to Pairs</h1>
-      <a id="click-to-play" class="btn btn-primary btn-lg btn-block" href="./pairs.php">Click here to play</a>
-      <p>You're not using a registered session? <a href="./registration.php" class="btn btn-link">Register now</a></p>
+      <?php
+      if($_SESSION["registered"]){
+        echo '<a id="click-to-play" class="btn btn-primary btn-lg btn-block" href="./pairs.php">Click here to play</a>';
+      }else{
+        echo '<p>You\'re not using a registered session? <a href="./registration.php" class="btn btn-link">Register now</a></p>';
+      }
+      ?>
     </div>
   </div>
 </body>

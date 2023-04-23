@@ -1,3 +1,12 @@
+<?php
+include("./cookieManagement.php");
+
+if(!isset($_SESSION["registered"])){
+  session_start();
+  saveDataInSession();
+}
+?>
+
 <html lang="zxx">
 
 <head>
@@ -14,7 +23,8 @@
     integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
     crossorigin="anonymous"></script>
 
-  <?php include "./navMenu.php" ?>
+  <?php include "./navMenu.php"; ?>
+
   <div id="main">
 
   </div>

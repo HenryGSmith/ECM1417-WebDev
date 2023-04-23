@@ -40,7 +40,10 @@ h1 {
     background-color: #21897e;
 }
 .btn-primary:hover {
-    background-color: #293e55;
+    background-color: #293e55 !important;
+}
+.btn-primary:active{
+    background-color: #016dcd !important;
 }
 
 .btn-link{
@@ -48,6 +51,14 @@ h1 {
 }
 .btn-link:hover{
     color: #293e55;
+}
+
+.white{
+    color: white !important;
+}
+.red{
+    color: #d72638 !important;
+    padding: 0px 4px 4px 4px;
 }
 
 html, body{
@@ -85,9 +96,16 @@ html, body{
     margin: 1vh;
 }
 
+#reg-form{
+    background-color: #293e55;
+    color: white !important;
+    padding: 30px;
+    border-radius: 25px;
+}
+
 /* game window */
 .GameDiv {
-    background-color: #4d4c4c;
+    background-color: #293e55;
     box-shadow: 5px 5px;
     width: fit-content;
     height: fit-content;
@@ -96,4 +114,79 @@ html, body{
 canvas {
     background-color: #ffffff00;
     vertical-align: bottom;
+}
+
+/* tab */
+.tab {
+    overflow: hidden;
+    background-color: #21897e;
+    border-radius: 10px 10px 0px 0px;
+  }
+  
+  .tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+  }
+  
+  .tab button:hover {
+    background-color: #0a58ca;
+  }
+  
+  .tab button.active {
+    background-color: #016dcd;
+  }
+  
+  .tabcontent {
+    display: none;
+    padding: 6px 12px;
+    background-color: #016dcd;
+    border-top: none;
+    margin-bottom: 10px;
+    border-radius: 10px 10px 10px 10px;
+  }
+  
+  .button {
+    padding:15px;
+    border-radius: 10px 10px 0px 0px;
+    color: white;
+  }
+
+  .tab-group {
+    border-radius: 10px;
+    box-shadow: 5px 5px black;
+    background-color: #21897e;
+  }
+
+/* Avatar */
+.avatar-container{
+    position:relative;
+    margin:8px;
+}
+
+.avatar-image-1{
+    position: relative;
+    z-index: 1;
+}
+.avatar-image-2{
+    position: absolute;
+    left: 0px;
+    z-index: 2;
+}
+.avatar-image-3{
+    position: absolute;
+    left: 0px;
+    z-index: 3;
+}
+
+#submit-button{
+    background-color: #016dcd;
+}
+#submit-button:hover{
+    background-color: #0a58ca !important;
 }
