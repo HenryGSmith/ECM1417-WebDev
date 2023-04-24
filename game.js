@@ -63,6 +63,29 @@ function screenToWorldSpace(x, y) {
     return [xWorld, yWorld];
 }
 
+function setCookie(cname, cvalue, exdays) {
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    let expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    let name = cname + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
 //====================================================
 //================= INPUT MANAGEMENT =================
 
@@ -78,8 +101,8 @@ canvas.addEventListener("mousedown", (e) => {
                 CARDS[p].startFlipAnim();
             }
         }
-        for (let i in UI){
-            if(UI[i].isZoomed){
+        for (let i in UI) {
+            if (UI[i].isZoomed) {
                 UI[i].onClick();
             }
         }
@@ -103,8 +126,8 @@ function square(x, y) {
 //----------------------------------------------------
 //------------------ OBJECT SPRITES ------------------
 
-class startButton {
-    constructor(x, y, w, h, zw, zh, text = "") {
+class UIButton {
+    constructor(x, y, w, h, zw, zh, onClickFunction, text = "") {
         this.anchor = { x: x, y: y };
         this.offset = { x: 0, y: 0 };
         this.originalDims = { w: w, h: h };
@@ -117,6 +140,8 @@ class startButton {
         this.zoomOutAnimRunning = false;
 
         this.AnimCounter = { zoomIn: 0, zoomOut: 0 };
+
+        this.onClickFunction = onClickFunction;
     }
 
     //animations
@@ -146,8 +171,8 @@ class startButton {
         }
     }
 
-    onClick(){
-        console.log("game starting");
+    onClick() {
+        this.onClickFunction();
     }
 
     // object management
@@ -189,7 +214,7 @@ class startButton {
         ctx.fillStyle = "black";
         ctx.textBaseline = "middle";
         ctx.textAlign = "center";
-        ctx.fillText(this.text, x + this.currentDims.w/2, y+this.currentDims.h/2);
+        ctx.fillText(this.text, x + this.currentDims.w / 2, y + this.currentDims.h / 2);
     }
 }
 
@@ -322,25 +347,13 @@ const GLOBALS = {
 
 //storage of all interactable elements
 const CARDS = [];
-CARDS.push(new card(10, 10, 38, 50, 48, 60));
-
 const UI = [];
-var buttonLocation = screenToWorldSpace(0.3, 0.4);
-var buttonSize = screenToWorldSpace(0.4, 0.2);
-var buttonZoomed = screenToWorldSpace(0.42, 0.22);
-UI.push(new startButton(
-    buttonLocation[0], buttonLocation[1], buttonSize[0], buttonSize[1], buttonZoomed[0], buttonZoomed[1],
-    "Start the game"));
-
-
-// applies initial settings
-function init() {
-    resizeCanvas();
-}
 
 // renders background elements
+var BACKGROUND_ELEMS = "#00000000";
 function renderBackground() {
-    //square(0,0);
+    ctx.fillStyle = BACKGROUND_ELEMS;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
 // renders prop objects from PROPS
@@ -365,6 +378,55 @@ function startFrames() {
     // call next frame
     window.requestAnimationFrame(startFrames);
 }
+
+//====================================================
+//==================== GAME LOGIC ====================
+
+// applies initial settings
+function init() {
+    resizeCanvas();
+    setupScene();
+}
+
+var currentScene = "level_select";
+
+var buttonLocation = screenToWorldSpace(0.3, 0.4);
+var buttonSize = screenToWorldSpace(0.4, 0.2);
+var buttonZoomed = screenToWorldSpace(0.42, 0.22);
+const SCENES = {
+    start_menu: {
+        UI: {
+            buttons: [new UIButton(
+                buttonLocation[0], buttonLocation[1], buttonSize[0], buttonSize[1], buttonZoomed[0], buttonZoomed[1],
+                () => {
+                    currentScene = "level_select"
+                    setupScene();
+                },
+                "Start the game"
+            )]
+        },
+        Background: "#00000000"
+    },
+    level_select: {
+        UI: [],
+        Background: "#00000000"
+    },
+    level:{
+        UI:[],
+        Background: "#00000000"
+    }
+};
+
+function setupScene() {
+    UI.splice(0, UI.length);
+
+    for (let i in SCENES[currentScene].UI.buttons) {
+        UI.push(SCENES[currentScene].UI.buttons[i]);
+    }
+    BACKGROUND_ELEMS = SCENES[currentScene].Background;
+}
+
+//CARDS.push(new card(10, 10, 38, 50, 48, 60));
 
 window.onload = () => {
     init(); // initialize the game
