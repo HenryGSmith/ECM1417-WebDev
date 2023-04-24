@@ -1,3 +1,16 @@
+/* CURRENT COLOUR SCHEME*/
+[data-bs-theme=custom] {
+--black: #000000ff;
+--paynes-gray: #546375ff;
+--prussian-blue: #293e55ff;
+--blue: #0000ffff;
+--celtic-blue: #016dcdff;
+--dark-cyan: #21897eff;
+--moss-green: #8b935bff;
+--carrot-orange: #f49d37ff;
+--crimson: #d72638ff;
+}
+
 h1 {
     text-align: center;
 }

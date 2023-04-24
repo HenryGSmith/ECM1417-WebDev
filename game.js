@@ -109,7 +109,6 @@ canvas.addEventListener("click", (e) => {
         for (let i in UI_FLOAT) {
             if (UI_FLOAT[i].isZoomed) {
                 UI_FLOAT[i].onClick();
-                console.log("on click event and button is zoomed");
             }
         }
     }
@@ -133,7 +132,7 @@ function square(x, y) {
 //------------------ OBJECT SPRITES ------------------
 
 class UIButton {
-    constructor(coords, dims, zDims, onClickFunction, text = "") {
+    constructor(coords, dims, zDims, onClickFunction, text = "", color = "#f49d37") {
         this.anchor = { x: coords[0], y: coords[1] };
         this.offset = { x: 0, y: 0 };
         this.originalDims = { w: dims[0], h: dims[1] };
@@ -149,6 +148,8 @@ class UIButton {
 
         this.onClickFunction = onClickFunction;
         this.extraData = 0;
+
+        this.color = color;
     }
 
     //animations
@@ -214,7 +215,7 @@ class UIButton {
         //draw sprite to canvas
         var x = this.anchor.x + this.offset.x;
         var y = this.anchor.y + this.offset.y;
-        ctx.fillStyle = "#f49d37";
+        ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.roundRect(x, y, this.currentDims.w, this.currentDims.h, 10);
         ctx.fill();
@@ -454,18 +455,29 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
 
     for (var i = 0; i < 3; i++) {
         for (var j = 0; j < 3; j++) {
+            var index = 3 * j + i + 1;
+            var color = "";
+            if (index > levelUnlock) {
+                color = "#546375";
+                zoom = 0;
+            } else {
+                color = "#F49D37";
+            }
+
             var button =
                 new UIButton(
                     [x + (i * gridWidth / 3) + difference / 2, y + (j * gridHeight / 3)],
                     [dim, dim], [dim + zoom, dim + zoom],
                     (n) => {
-                        currentScene = "level"
-                        currentLevel = 3 * j + i + 1;
-                        setupScene();
+                        if (n <= levelUnlock) {
+                            currentScene = "level"
+                            currentLevel = index;
+                            setupScene();
+                        }
                     },
-                    3 * j + i + 1
+                    index, color
                 );
-            button.extraData = 3 * j + i + 1;
+            button.extraData = index;
             grid.push(button);
         }
     }
@@ -475,6 +487,7 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
 
 var currentScene = "start_menu";
 var currentLevel = 0;
+var levelUnlock = 1;
 var gameIsPaused = false;
 var updateLimiter = false;
 
