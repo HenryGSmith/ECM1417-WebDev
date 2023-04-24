@@ -4,7 +4,7 @@
 const canvas = document.querySelector("canvas");
 
 // internal canvas space dimenesions
-const canvasDims = { width: 600, height: 185 * 2 };
+const canvasDims = { width: 1200, height: 185 * 4 };
 canvas.width = canvasDims.width;
 canvas.height = canvasDims.height;
 
@@ -94,7 +94,7 @@ canvas.addEventListener("mousemove", (e) => {
     GLOBALS.mouse.y = (e.offsetY / GLOBALS.screen.height) * canvas.height;
 })
 
-canvas.addEventListener("mousedown", (e) => {
+canvas.addEventListener("click", (e) => {
     if (e.button === 0) {
         for (let p in CARDS) {
             if (CARDS[p].isZoomed) {
@@ -104,6 +104,12 @@ canvas.addEventListener("mousedown", (e) => {
         for (let i in UI) {
             if (UI[i].isZoomed) {
                 UI[i].onClick();
+            }
+        }
+        for (let i in UI_FLOAT) {
+            if (UI_FLOAT[i].isZoomed) {
+                UI_FLOAT[i].onClick();
+                console.log("on click event and button is zoomed");
             }
         }
     }
@@ -127,12 +133,12 @@ function square(x, y) {
 //------------------ OBJECT SPRITES ------------------
 
 class UIButton {
-    constructor(x, y, w, h, zw, zh, onClickFunction, text = "") {
-        this.anchor = { x: x, y: y };
+    constructor(coords, dims, zDims, onClickFunction, text = "") {
+        this.anchor = { x: coords[0], y: coords[1] };
         this.offset = { x: 0, y: 0 };
-        this.originalDims = { w: w, h: h };
-        this.currentDims = { w: w, h: h };
-        this.zoomedDims = { w: zw, h: zh }
+        this.originalDims = { w: dims[0], h: dims[1] };
+        this.currentDims = { w: dims[0], h: dims[1] };
+        this.zoomedDims = { w: zDims[0], h: zDims[1] }
         this.isZoomed = false;
         this.text = text;
 
@@ -142,6 +148,7 @@ class UIButton {
         this.AnimCounter = { zoomIn: 0, zoomOut: 0 };
 
         this.onClickFunction = onClickFunction;
+        this.extraData = 0;
     }
 
     //animations
@@ -172,7 +179,10 @@ class UIButton {
     }
 
     onClick() {
-        this.onClickFunction();
+        if (!updateLimiter) {
+            this.onClickFunction(this.extraData);
+            updateLimiter = true;
+        }
     }
 
     // object management
@@ -180,16 +190,14 @@ class UIButton {
         // hovering over the button
         var xBound = GLOBALS.mouse.x >= this.anchor.x + this.offset.x && GLOBALS.mouse.x <= this.anchor.x + this.offset.x + this.currentDims.w;
         var yBound = GLOBALS.mouse.y >= this.anchor.y + this.offset.y && GLOBALS.mouse.y <= this.anchor.y + this.offset.y + this.currentDims.h;
-        if (!this.flipAnimRunning) {
-            if (xBound && yBound) {
-                if (!this.zoomInAnimRunning && !this.isZoomed) {
-                    this.isZoomed = true;
-                    this.zoomInAnimRunning = true;
-                }
-            } else if (this.isZoomed) {
-                this.isZoomed = false;
-                this.zoomOutAnimRunning = true;
+        if (xBound && yBound) {
+            if (!this.zoomInAnimRunning && !this.isZoomed) {
+                this.isZoomed = true;
+                this.zoomInAnimRunning = true;
             }
+        } else if (this.isZoomed) {
+            this.isZoomed = false;
+            this.zoomOutAnimRunning = true;
         }
     }
     render() {
@@ -210,11 +218,46 @@ class UIButton {
         ctx.beginPath();
         ctx.roundRect(x, y, this.currentDims.w, this.currentDims.h, 10);
         ctx.fill();
-        ctx.font = "30px Verdana";
+        ctx.font = "30px 'Courier new'";
         ctx.fillStyle = "black";
         ctx.textBaseline = "middle";
         ctx.textAlign = "center";
         ctx.fillText(this.text, x + this.currentDims.w / 2, y + this.currentDims.h / 2);
+    }
+}
+
+class UIText {
+    constructor(coords, fontSize, font, color, text, styling = "", alignBase = "top", align = "left") {
+        this.coords = { x: coords[0], y: coords[1] };
+        this.fontSize = fontSize;
+        this.font = font;
+        this.color = color;
+        this.text = text;
+        this.styling = styling;
+        this.alignBase = alignBase;
+        this.align = align;
+    }
+    render() {
+        ctx.font = this.styling + this.fontSize + "px" + this.font;
+        ctx.fillStyle = this.color;
+        ctx.textBaseline = this.alignBase;
+        ctx.textAlign = this.align;
+        ctx.fillText(this.text, this.coords.x, this.coords.y);
+    }
+}
+
+class UIRect {
+    constructor(coords, dims, color, cornerRadii = 10) {
+        this.anchor = { x: coords[0], y: coords[1] };
+        this.dims = { w: dims[0], h: dims[1] };
+        this.color = color;
+        this.radii = cornerRadii;
+    }
+    render() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.roundRect(this.anchor.x, this.anchor.y, this.dims.w, this.dims.h, this.radii);
+        ctx.fill();
     }
 }
 
@@ -348,6 +391,7 @@ const GLOBALS = {
 //storage of all interactable elements
 const CARDS = [];
 const UI = [];
+const UI_FLOAT = [];
 
 // renders background elements
 var BACKGROUND_ELEMS = "#00000000";
@@ -366,14 +410,24 @@ function renderProps() {
     }
 }
 
+function renderFloatUI() {
+    for (let i in UI_FLOAT) {
+        UI_FLOAT[i].render();
+    }
+}
+
 // renders out each frame
 function startFrames() {
+    //reset update limit for on screen button presses.
+    updateLimiter = false;
+
     // erase canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // render entities in order
     renderBackground();
     renderProps();
+    renderFloatUI();
 
     // call next frame
     window.requestAnimationFrame(startFrames);
@@ -388,43 +442,172 @@ function init() {
     setupScene();
 }
 
-var currentScene = "level_select";
+function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
+    var grid = [];
+    var x = anchor[0];
+    var y = anchor[1];
+    var gridWidth = dims[0];
+    var gridHeight = dims[1];
 
-var buttonLocation = screenToWorldSpace(0.3, 0.4);
-var buttonSize = screenToWorldSpace(0.4, 0.2);
-var buttonZoomed = screenToWorldSpace(0.42, 0.22);
+    var dim = (gridHeight / 3) - screenToWorldSpace(buffer, 0)[0];
+    var difference = gridWidth / 3 - dim;
+
+    for (var i = 0; i < 3; i++) {
+        for (var j = 0; j < 3; j++) {
+            var button =
+                new UIButton(
+                    [x + (i * gridWidth / 3) + difference / 2, y + (j * gridHeight / 3)],
+                    [dim, dim], [dim + zoom, dim + zoom],
+                    (n) => {
+                        currentScene = "level"
+                        currentLevel = 3 * j + i + 1;
+                        setupScene();
+                    },
+                    3 * j + i + 1
+                );
+            button.extraData = 3 * j + i + 1;
+            grid.push(button);
+        }
+    }
+
+    return grid;
+}
+
+var currentScene = "start_menu";
+var currentLevel = 0;
+var gameIsPaused = false;
+var updateLimiter = false;
+
 const SCENES = {
     start_menu: {
         UI: {
-            buttons: [new UIButton(
-                buttonLocation[0], buttonLocation[1], buttonSize[0], buttonSize[1], buttonZoomed[0], buttonZoomed[1],
-                () => {
-                    currentScene = "level_select"
-                    setupScene();
-                },
-                "Start the game"
-            )]
+            buttons: [
+                new UIButton(
+                    screenToWorldSpace(0.3, 0.4), screenToWorldSpace(0.4, 0.2), screenToWorldSpace(0.42, 0.22),
+                    () => {
+                        currentScene = "level_select"
+                        setupScene();
+                    },
+                    "Start the game")
+            ],
+            text: [
+                new UIText(screenToWorldSpace(0.1, 0.1), "120", "'Courier new'", "white", "= PAIRS ="),
+                new UIText(screenToWorldSpace(0.5, 0.8), "60", "'Courier new'", "white", "A Game of Snap")
+            ]
         },
         Background: "#00000000"
     },
     level_select: {
-        UI: [],
+        UI: {
+            buttons:
+                generateLevelGrid(
+                    screenToWorldSpace(0.2, 0.15), screenToWorldSpace(0.6, 0.75), screenToWorldSpace(0.02, 0)[0]
+                ).concat([
+                    new UIButton(
+                        screenToWorldSpace(0.02, 0.02), screenToWorldSpace(0.1, 0.1), screenToWorldSpace(0.11, 0.11),
+                        () => {
+                            currentScene = "start_menu";
+                            setupScene();
+                        }, "Back")
+                ]),
+            text: [
+                new UIText(screenToWorldSpace(0.5, 0.05), "60", "'Courier new'",
+                    "white", "► LEVEL SELECT ◄", undefined, undefined, "center")
+            ]
+        },
         Background: "#00000000"
     },
-    level:{
-        UI:[],
+    level: {
+        UI: {
+            buttons: [
+                new UIButton(
+                    screenToWorldSpace(0.02, 0.02), screenToWorldSpace(0.1, 0.1), screenToWorldSpace(0.11, 0.11),
+                    () => {
+                        if (!gameIsPaused) {
+                            gameIsPaused = true;
+                            setupScene();
+                        }
+                    },
+                    "pause")
+            ],
+            text: [],
+
+            pauseMenu: {
+                buttons: [
+                    new UIButton(
+                        screenToWorldSpace(0.4, 0.4), screenToWorldSpace(0.2, 0.1), screenToWorldSpace(0.21, 0.11),
+                        () => {
+                            gameIsPaused = false;
+                            setupScene();
+                            console.log("onclick function")
+                        },
+                        "Resume"),
+                    new UIButton(
+                        screenToWorldSpace(0.4, 0.6), screenToWorldSpace(0.2, 0.1), screenToWorldSpace(0.21, 0.11),
+                        () => {
+                            gameIsPaused = false;
+                            currentScene = "level_select";
+                            setupScene();
+                        },
+                        "exit")
+                ],
+                text: [
+                    new UIText(
+                        screenToWorldSpace(0.5, 0.22), "62", "'Courier new'", "white", "⊣ PAUSED ⊢",
+                        undefined, undefined, "center"
+                    )
+                ],
+                sprites: [
+                    new UIRect(screenToWorldSpace(0.325, 0.175), screenToWorldSpace(0.35, 0.65), "#21897e", 10)
+                ]
+            }
+        },
         Background: "#00000000"
     }
 };
 
 function setupScene() {
     UI.splice(0, UI.length);
+    UI_FLOAT.splice(0, UI_FLOAT.length);
 
-    for (let i in SCENES[currentScene].UI.buttons) {
-        UI.push(SCENES[currentScene].UI.buttons[i]);
+    if (!gameIsPaused) {
+        for (let i in SCENES[currentScene].UI.buttons) {
+            var button = SCENES[currentScene].UI.buttons[i];
+            button.currentDims.w = button.originalDims.w
+            button.currentDims.h = button.originalDims.h
+            button.offset.y = (button.originalDims.h - button.currentDims.h) / 2;
+            button.offset.x = (button.originalDims.w - button.currentDims.w) / 2;
+            UI.push(button);
+        }
+    }
+
+    for (let i in SCENES[currentScene].UI.text) {
+        UI.push(SCENES[currentScene].UI.text[i]);
     }
     BACKGROUND_ELEMS = SCENES[currentScene].Background;
+
+    if (gameIsPaused) {
+        for (let i in SCENES.level.UI.pauseMenu.sprites) {
+            UI_FLOAT.push(SCENES.level.UI.pauseMenu.sprites[i]);
+        }
+        for (let i in SCENES.level.UI.pauseMenu.buttons) {
+            var button = SCENES.level.UI.pauseMenu.buttons[i];
+            button.currentDims.w = button.originalDims.w
+            button.currentDims.h = button.originalDims.h
+            button.offset.y = (button.originalDims.h - button.currentDims.h) / 2;
+            button.offset.x = (button.originalDims.w - button.currentDims.w) / 2;
+            UI_FLOAT.push(button);
+        }
+        for (let i in SCENES.level.UI.pauseMenu.text) {
+            UI_FLOAT.push(SCENES.level.UI.pauseMenu.text[i]);
+        }
+    }
 }
+
+//-----------------------------------------------------
+//-------------------- LEVEL LOGIC --------------------
+
+
 
 //CARDS.push(new card(10, 10, 38, 50, 48, 60));
 
