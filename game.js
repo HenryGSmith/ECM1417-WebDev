@@ -8,6 +8,9 @@ const canvasDims = { width: 1200, height: 185 * 4 };
 canvas.width = canvasDims.width;
 canvas.height = canvasDims.height;
 
+// - 2d context
+const ctx = canvas.getContext("2d");
+
 //=====================================================
 //====================== UTILITY ======================
 
@@ -96,19 +99,22 @@ canvas.addEventListener("mousemove", (e) => {
 
 canvas.addEventListener("click", (e) => {
     if (e.button === 0) {
-        for (let p in CARDS) {
-            if (CARDS[p].isZoomed) {
-                CARDS[p].startFlipAnim();
+        for (let i in UI_FLOAT) {
+            if (UI_FLOAT[i].isZoomed) {
+                UI_FLOAT[i].onClick();
             }
+        }
+        if (gameIsPaused) {
+            return;
         }
         for (let i in UI) {
             if (UI[i].isZoomed) {
                 UI[i].onClick();
             }
         }
-        for (let i in UI_FLOAT) {
-            if (UI_FLOAT[i].isZoomed) {
-                UI_FLOAT[i].onClick();
+        for (let p in CARDS) {
+            if (CARDS[p].isHovered) {
+                CARDS[p].startFlipAnim();
             }
         }
     }
@@ -116,9 +122,6 @@ canvas.addEventListener("click", (e) => {
 
 //====================================================
 //================ RENDERING PIPELINE ================
-
-// - 2d context
-const ctx = canvas.getContext("2d");
 
 //-----------------------------------------------------
 //---------------------- SPRITES ----------------------
@@ -263,14 +266,15 @@ class UIRect {
 }
 
 class card {
-    constructor(x, y, w, h, zw = 50, zh = 60, corner = 5) {
-        this.anchor = { x: x, y: y };
+    constructor(coords, dims, zoomedDims = [50, 60], fColor = "green", bColor = "red", corner = 5, extraData = [0, 0, 0]) {
+        this.anchor = { x: coords[0], y: coords[1] };
         this.corner = corner;
         this.offset = { x: 0, y: 0 };
-        this.originalDims = { w: w, h: h };
-        this.currentDims = { w: w, h: h };
-        this.zoomedDims = { w: zw, h: zh }
+        this.originalDims = { w: dims[0], h: dims[1] };
+        this.currentDims = { w: dims[0], h: dims[1] };
+        this.zoomedDims = { w: zoomedDims[0], h: zoomedDims[1] };
         this.isZoomed = false;
+        this.isHovered = false;
         this.isFliped = false;
         this.faceDown = true;
 
@@ -280,11 +284,16 @@ class card {
         this.removeAnimRunning = false;
 
         this.AnimCounter = { flip: 0, zoomIn: 0, zoomOut: 0, remove: 0 };
+
+        this.backColor = fColor;
+        this.frontColor = bColor;
+
+        this.extraData = extraData;
     }
 
     //animations
     startFlipAnim() {
-        if (!this.flipAnimRunning) {
+        if (!this.flipAnimRunning && !gameIsPaused) {
             this.flipAnimRunning = true;
             this.isFliped = false;
         }
@@ -343,40 +352,58 @@ class card {
         var yBound = GLOBALS.mouse.y >= this.anchor.y + this.offset.y && GLOBALS.mouse.y <= this.anchor.y + this.offset.y + this.currentDims.h;
         if (!this.flipAnimRunning) {
             if (xBound && yBound) {
+                this.isHovered = true;
                 if (!this.zoomInAnimRunning && !this.isZoomed) {
                     this.isZoomed = true;
                     this.zoomInAnimRunning = true;
                 }
-            } else if (this.isZoomed) {
-                this.isZoomed = false;
-                this.zoomOutAnimRunning = true;
+            } 
+            else if (this.isZoomed) {
+                if(this.faceDown){
+                    this.isZoomed = false;
+                    this.zoomOutAnimRunning = true;
+                }
+                this.isHovered = false;
+            }else{
+                this.isHovered = false;
             }
         }
     }
     render() {
-        //update behaviour
-        this.update();
-        //run animations
-        if (this.flipAnimRunning) {
-            this.flipAnim();
-        }
-        if (this.zoomInAnimRunning) {
-            this.zoomInAnim();
-        }
-        if (this.zoomOutAnimRunning) {
-            this.zoomOutAnim();
-        }
-        if (this.removeAnimRunning) {
-            this.removeAnim();
+        if (!gameIsPaused) {
+            //update behaviour
+            this.update();
+            //run animations
+            if (this.flipAnimRunning) {
+                this.flipAnim();
+            }
+            if (this.zoomInAnimRunning) {
+                this.zoomInAnim();
+            }
+            if (this.zoomOutAnimRunning) {
+                this.zoomOutAnim();
+            }
+            if (this.removeAnimRunning) {
+                this.removeAnim();
+            }
         }
 
         // draw sprite to canvas
         var x = this.anchor.x + this.offset.x;
         var y = this.anchor.y + this.offset.y;
-        ctx.fillStyle = (this.faceDown) ? "green" : "red";
+        ctx.fillStyle = (this.faceDown) ? this.backColor : this.frontColor;
         ctx.beginPath();
         ctx.roundRect(x, y, this.currentDims.w, this.currentDims.h, this.corner);
         ctx.fill();
+        if (!this.faceDown) {
+            var margin = {x: this.currentDims.w/10, y: this.zoomedDims.w / 10}
+            var img = GLOBALS.Images.body[this.extraData[0]];
+            var width = this.currentDims.w - margin.x;
+            var height = this.zoomedDims.w - margin.y;
+            var offset = { x: margin.x/2, y: (this.zoomedDims.h - height) / 2 };
+
+            ctx.drawImage(img, x + offset.x, y + offset.y, width, height);
+        }
     }
 }
 
@@ -386,8 +413,39 @@ class card {
 // globally accessable states
 const GLOBALS = {
     mouse: { x: 0, y: 0 },
-    screen: { width: 0, height: 0 }
+    screen: { width: 0, height: 0 },
+    Images: {
+        body: [
+            new Image(), new Image(), new Image()],
+        eyes: [
+            new Image(), new Image(), new Image(),
+            new Image(), new Image(), new Image()
+        ],
+        mouth: [
+            new Image(), new Image(), new Image(),
+            new Image(), new Image(), new Image()
+        ]
+    }
 };
+
+// emoji images
+GLOBALS.Images.body[0].src = "/emojiAssets/body/green.png";
+GLOBALS.Images.body[1].src = "/emojiAssets/body/red.png";
+GLOBALS.Images.body[2].src = "/emojiAssets/body/yellow.png";
+
+GLOBALS.Images.eyes[0].src = "/emojiAssets/eyes/closed.png";
+GLOBALS.Images.eyes[1].src = "/emojiAssets/eyes/laughing.png";
+GLOBALS.Images.eyes[2].src = "/emojiAssets/eyes/long.png";
+GLOBALS.Images.eyes[3].src = "/emojiAssets/eyes/normal.png";
+GLOBALS.Images.eyes[4].src = "/emojiAssets/eyes/rolling.png";
+GLOBALS.Images.eyes[5].src = "/emojiAssets/eyes/winking.png";
+
+GLOBALS.Images.mouth[0].src = "/emojiAssets/mouth/open.png";
+GLOBALS.Images.mouth[1].src = "/emojiAssets/mouth/sad.png";
+GLOBALS.Images.mouth[2].src = "/emojiAssets/mouth/smiling.png";
+GLOBALS.Images.mouth[3].src = "/emojiAssets/mouth/straight.png";
+GLOBALS.Images.mouth[4].src = "/emojiAssets/mouth/surprise.png";
+GLOBALS.Images.mouth[5].src = "/emojiAssets/mouth/teeth.png";
 
 //storage of all interactable elements
 const CARDS = [];
@@ -395,10 +453,11 @@ const UI = [];
 const UI_FLOAT = [];
 
 // renders background elements
-var BACKGROUND_ELEMS = "#00000000";
+const BACKGROUND_ELEMS = [];
 function renderBackground() {
-    ctx.fillStyle = BACKGROUND_ELEMS;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i in BACKGROUND_ELEMS) {
+        BACKGROUND_ELEMS[i].render();
+    }
 }
 
 // renders prop objects from PROPS
@@ -471,8 +530,9 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
                     (n) => {
                         if (n <= levelUnlock) {
                             currentScene = "level"
-                            currentLevel = index;
+                            currentLevel = n;
                             setupScene();
+                            setupLevel();
                         }
                     },
                     index, color
@@ -487,7 +547,7 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
 
 var currentScene = "start_menu";
 var currentLevel = 0;
-var levelUnlock = 1;
+var levelUnlock = 9;
 var gameIsPaused = false;
 var updateLimiter = false;
 
@@ -508,7 +568,7 @@ const SCENES = {
                 new UIText(screenToWorldSpace(0.5, 0.8), "60", "'Courier new'", "white", "A Game of Snap")
             ]
         },
-        Background: "#00000000"
+        Background: []
     },
     level_select: {
         UI: {
@@ -528,7 +588,7 @@ const SCENES = {
                     "white", "► LEVEL SELECT ◄", undefined, undefined, "center")
             ]
         },
-        Background: "#00000000"
+        Background: []
     },
     level: {
         UI: {
@@ -551,8 +611,8 @@ const SCENES = {
                         screenToWorldSpace(0.4, 0.4), screenToWorldSpace(0.2, 0.1), screenToWorldSpace(0.21, 0.11),
                         () => {
                             gameIsPaused = false;
+                            updateLimiter = true;
                             setupScene();
-                            console.log("onclick function")
                         },
                         "Resume"),
                     new UIButton(
@@ -575,19 +635,23 @@ const SCENES = {
                 ]
             }
         },
-        Background: "#00000000"
+        Background: []
     }
 };
 
 function setupScene() {
+    BACKGROUND_ELEMS.splice(0, BACKGROUND_ELEMS.length);
+    if (currentScene !== "level") {
+        CARDS.splice(0, CARDS.length);
+    }
     UI.splice(0, UI.length);
     UI_FLOAT.splice(0, UI_FLOAT.length);
 
     if (!gameIsPaused) {
         for (let i in SCENES[currentScene].UI.buttons) {
             var button = SCENES[currentScene].UI.buttons[i];
-            button.currentDims.w = button.originalDims.w
-            button.currentDims.h = button.originalDims.h
+            button.currentDims.w = button.originalDims.w;
+            button.currentDims.h = button.originalDims.h;
             button.offset.y = (button.originalDims.h - button.currentDims.h) / 2;
             button.offset.x = (button.originalDims.w - button.currentDims.w) / 2;
             UI.push(button);
@@ -597,7 +661,9 @@ function setupScene() {
     for (let i in SCENES[currentScene].UI.text) {
         UI.push(SCENES[currentScene].UI.text[i]);
     }
-    BACKGROUND_ELEMS = SCENES[currentScene].Background;
+    for (let i in SCENES[currentScene].Background) {
+        BACKGROUND_ELEMS.push(SCENES[currentScene].Background[i]);
+    }
 
     if (gameIsPaused) {
         for (let i in SCENES.level.UI.pauseMenu.sprites) {
@@ -605,8 +671,8 @@ function setupScene() {
         }
         for (let i in SCENES.level.UI.pauseMenu.buttons) {
             var button = SCENES.level.UI.pauseMenu.buttons[i];
-            button.currentDims.w = button.originalDims.w
-            button.currentDims.h = button.originalDims.h
+            button.currentDims.w = button.originalDims.w;
+            button.currentDims.h = button.originalDims.h;
             button.offset.y = (button.originalDims.h - button.currentDims.h) / 2;
             button.offset.x = (button.originalDims.w - button.currentDims.w) / 2;
             UI_FLOAT.push(button);
@@ -615,14 +681,42 @@ function setupScene() {
             UI_FLOAT.push(SCENES.level.UI.pauseMenu.text[i]);
         }
     }
+
 }
 
 //-----------------------------------------------------
 //-------------------- LEVEL LOGIC --------------------
 
+function generateCardGrid(setSize, nSets, anchor, dims) {
+    var map = [
+        [0, 1, 2],
+        [0, 1, 2]
+    ];
+    var faces = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
 
+    var buffer = screenToWorldSpace(0.02, 0)[0];
+    var cardPlaceDims = { w: dims[0] / nSets, h: dims[1] / setSize };
+    var cardWidth = (cardPlaceDims.h - buffer) * (5 / 7);
+    var widthOffset = (cardPlaceDims.w - cardWidth) / 2;
 
-//CARDS.push(new card(10, 10, 38, 50, 48, 60));
+    for (let j in map) {
+        for (let i in map[0]) {
+            CARDS.push(new card(
+                [anchor[0] + i * cardPlaceDims.w + widthOffset, anchor[1] + j * cardPlaceDims.h + buffer / 2],
+                [cardWidth, cardPlaceDims.h - buffer],
+                [cardWidth + buffer, cardPlaceDims.h],
+                "#21897e", "#d72638",
+                7, faces[map[j][i]]
+            ));
+        }
+    }
+}
+
+function setupLevel() {
+    var setSize = Math.ceil(currentLevel / 3) + 1;
+    var nSets = (currentLevel - 1) % 3 + 3;
+    generateCardGrid(setSize, nSets, screenToWorldSpace(0.2, 0.2), screenToWorldSpace(0.6, 0.76));
+}
 
 window.onload = () => {
     init(); // initialize the game
