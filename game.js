@@ -114,7 +114,7 @@ canvas.addEventListener("click", (e) => {
         }
         for (let p in CARDS) {
             if (CARDS[p].isHovered) {
-                CARDS[p].startFlipAnim();
+                CARDS[p].onClick();
             }
         }
     }
@@ -279,6 +279,7 @@ class card {
         this.faceDown = true;
 
         this.flipAnimRunning = false;
+        this.isanimFinishedFaceUP = false;
         this.zoomInAnimRunning = false;
         this.zoomOutAnimRunning = false;
         this.removeAnimRunning = false;
@@ -296,6 +297,13 @@ class card {
         if (!this.flipAnimRunning && !gameIsPaused) {
             this.flipAnimRunning = true;
             this.isFliped = false;
+            this.isanimFinishedFaceUP = false;
+
+            if(this.faceDown){
+                level_flippedCards++;
+            }else{
+                level_flippedCards--;
+            }
         }
     }
     flipAnim(speed = 0.03) {
@@ -312,6 +320,9 @@ class card {
         else {
             this.AnimCounter.flip = 0;
             this.flipAnimRunning = false;
+            if(!this.faceDown){
+                this.isanimFinishedFaceUP = true;
+            }
         }
     }
 
@@ -341,11 +352,27 @@ class card {
         }
     }
 
-    removeAnim() {
-
+    startRemoveAnim(){
+        this.removeAnimRunning = true;
+    }
+    removeAnim(speed = 0.01) {
+        var exitCoords = screenToWorldSpace(1.5, 1.5);
+        this.offset.x = lerp(this.anchor.x, exitCoords[0], this.AnimCounter.remove);
+        this.offset.y = lerp(this.anchor.y, exitCoords[1], this.AnimCounter.remove);
+        this.AnimCounter.remove += speed;
+        if(this.AnimCounter.remove >= 1){
+            CARDS.
+        }
     }
 
     // object management
+    onClick() {
+        if(level_flippedCards >= level_setSize && this.faceDown){
+            return;
+        }
+        this.startFlipAnim();
+    }
+
     update() {
         // hovering over the card
         var xBound = GLOBALS.mouse.x >= this.anchor.x + this.offset.x && GLOBALS.mouse.x <= this.anchor.x + this.offset.x + this.currentDims.w;
@@ -357,14 +384,14 @@ class card {
                     this.isZoomed = true;
                     this.zoomInAnimRunning = true;
                 }
-            } 
+            }
             else if (this.isZoomed) {
-                if(this.faceDown){
+                if (this.faceDown) {
                     this.isZoomed = false;
                     this.zoomOutAnimRunning = true;
                 }
                 this.isHovered = false;
-            }else{
+            } else {
                 this.isHovered = false;
             }
         }
@@ -396,11 +423,11 @@ class card {
         ctx.roundRect(x, y, this.currentDims.w, this.currentDims.h, this.corner);
         ctx.fill();
         if (!this.faceDown) {
-            var margin = {x: this.currentDims.w/10, y: this.zoomedDims.w / 10}
+            var margin = { x: this.currentDims.w / 10, y: this.zoomedDims.w / 10 }
             var img = GLOBALS.Images.body[this.extraData[0]];
             var width = this.currentDims.w - margin.x;
             var height = this.zoomedDims.w - margin.y;
-            var offset = { x: margin.x/2, y: (this.zoomedDims.h - height) / 2 };
+            var offset = { x: margin.x / 2, y: (this.zoomedDims.h - height) / 2 };
 
             ctx.drawImage(img, x + offset.x, y + offset.y, width, height);
         }
@@ -480,6 +507,11 @@ function renderFloatUI() {
 function startFrames() {
     //reset update limit for on screen button presses.
     updateLimiter = false;
+
+    //update game logic
+    if(currentScene === "level"){
+        logicUpdate();
+    }
 
     // erase canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -715,7 +747,49 @@ function generateCardGrid(setSize, nSets, anchor, dims) {
 function setupLevel() {
     var setSize = Math.ceil(currentLevel / 3) + 1;
     var nSets = (currentLevel - 1) % 3 + 3;
+    level_setSize = setSize;
+    level_numSets = nSets;
+    level_flippedCards = 0;
     generateCardGrid(setSize, nSets, screenToWorldSpace(0.2, 0.2), screenToWorldSpace(0.6, 0.76));
+}
+
+function checkForMatch() {
+    var cardIDs = []
+    for (let i in CARDS) {
+        if (!CARDS[i].faceDown) {
+            cardIDs.push(CARDS[i].extraData);
+        }
+    }
+    var IDsMatch = cardIDs.every((val, i, arr) => val === arr[0]);
+    for (let i in CARDS) {
+        if (CARDS[i].isanimFinishedFaceUP) {
+            if(IDsMatch){
+                CARDS[i].startRemoveAnim();
+            }else{
+                CARDS[i].startFlipAnim();
+            }
+        }
+    }
+
+}
+
+var level_flippedCards = 0;
+var level_numSets = 0;
+var level_setSize = 0;
+
+function logicUpdate(){
+    var faceUpCards = 0;
+    if(level_flippedCards === level_setSize){
+        for(let i in CARDS){
+            if(CARDS[i].isanimFinishedFaceUP){
+                faceUpCards++;
+            }
+        }
+        if(faceUpCards === level_setSize){
+            checkForMatch();
+        }
+    }
+
 }
 
 window.onload = () => {
