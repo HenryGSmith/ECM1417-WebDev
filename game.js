@@ -742,7 +742,7 @@ const SCENES = {
             win_menu: {
                 buttons: [
                     new UIButton(
-                        screenToWorldSpace(0.4, 0.5), screenToWorldSpace(0.2, 0.1), screenToWorldSpace(0.21, 0.11),
+                        screenToWorldSpace(0.4, 0.55), screenToWorldSpace(0.2, 0.1), screenToWorldSpace(0.21, 0.11),
                         () => {
                             levelComplete = false;
                             updateLimiter = true;
