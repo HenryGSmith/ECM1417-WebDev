@@ -14,6 +14,28 @@ const ctx = canvas.getContext("2d");
 //=====================================================
 //====================== UTILITY ======================
 
+var DATA = {
+    data: []
+}
+var personalData = {
+    name: "",
+    icon: [],
+    levelTimes: [],
+    levelScores: [],
+    unlock: 1
+}
+
+// create data profile for player
+var account = getCookie("data");
+var existingData =
+    personalData.name = account.username;
+personalData.icon[0] = account.body_radio;
+personalData.icon[1] = account.eyes_radio;
+personalData.icon[2] = account.mouth_radio;
+setCookie("gameData", personalData, "30");
+
+updateJSON(personalData);
+
 // dynamic screen fit
 function resizeCanvas() {
     // resize the canvas to fit the window while 
@@ -66,27 +88,84 @@ function screenToWorldSpace(x, y) {
     return [xWorld, yWorld];
 }
 
-function setCookie(cname, cvalue, exdays) {
+function setCookie(cname, cobject, exdays) {
     const d = new Date();
+    var cvalue = JSON.stringify(cobject);
     d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
     let expires = "expires=" + d.toUTCString();
     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 }
 
-function getCookie(cname) {
-    let name = cname + "=";
-    let decodedCookie = decodeURIComponent(document.cookie);
-    let ca = decodedCookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) == ' ') {
-            c = c.substring(1);
-        }
-        if (c.indexOf(name) == 0) {
-            return c.substring(name.length, c.length);
+function getCookie(name) {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith(name + '=')) {
+            const jsonStr = cookie.substring(name.length + 1);
+            const output = decodeURIComponent(jsonStr)
+            return JSON.parse(output);
         }
     }
-    return "";
+    return null;
+}
+
+function getJSON() {
+    var output_data;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', './gameData.json');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        const responseData = JSON.parse(xhr.responseText);
+        console.log(responseData);
+      } else {
+        console.error('Error:', xhr.statusText);
+      }
+    };
+    xhr.onerror = function() {
+      console.error('Error:', xhr.statusText);
+    };
+    xhr.send();
+
+    return output_data;
+}
+
+function updateJSON(object) {
+    const currentJsonData = getJSON();
+
+    console.log(DATA + " update");
+    console.log(currentJsonData + " update");
+    if(DATA.data.length === 0){
+        DATA.data.push(object);
+    }
+    for (let i in DATA.data) {
+        if (DATA.data[i].name === object.name) {
+            console.log(DATA.data[i].name);
+            console.log(object.name);
+            DATA.data[i] = object;
+        } else {
+            DATA.data.push(object);
+            console.log("add");
+        }
+    }
+    saveJSON(DATA);
+}
+
+function saveJSON(object) {
+    var json_string = JSON.stringify(object);
+    // AJAX call to save JSON file
+    $.ajax({
+        url: "save_json_file.php",
+        type: "POST",
+        data: { json_data: json_string },
+        success: function (response) {
+            console.log("JSON file saved successfully");
+        },
+        error: function (xhr, status, error) {
+            console.error("Error saving JSON file: " + error);
+        }
+    });
 }
 
 function hasMatchingRows(arr) {
@@ -401,7 +480,7 @@ class card {
         if (this.removeAnimRunning) {
             return;
         }
-        if(this.faceDown){
+        if (this.faceDown) {
             this.startFlipAnim();
         }
     }
@@ -456,7 +535,7 @@ class card {
         ctx.roundRect(x, y, this.currentDims.w, this.currentDims.h, this.corner);
         ctx.fill();
         if (this.faceDown) {
-            ctx.lineWidth = this.zoomedDims.w/20;
+            ctx.lineWidth = this.zoomedDims.w / 20;
             ctx.strokeStyle = "#275160"
             ctx.stroke();
         } else {
@@ -579,14 +658,14 @@ function startFrames() {
 }
 
 const deltaTime = {
-    now : 0,
-    delta : 0,
-    then : 0
+    now: 0,
+    delta: 0,
+    then: 0
 }
-function setDelta(){
+function setDelta() {
     deltaTime.then = deltaTime.now;
     deltaTime.now = Date.now();
-    deltaTime.delta = (deltaTime.now - deltaTime.then)/1000;
+    deltaTime.delta = (deltaTime.now - deltaTime.then) / 1000;
 }
 
 //====================================================
@@ -646,7 +725,7 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
 
 var currentScene = "start_menu";
 var currentLevel = 0;
-var levelUnlock = 9;
+var levelUnlock = 1;
 var gameIsPaused = false;
 var updateLimiter = false;
 
@@ -824,7 +903,7 @@ function setupScene() {
         }
     }
 
-    if(currentScene === "level"){
+    if (currentScene === "level") {
         SCENES[currentScene].UI.text[0].text = "Match " + level_setSize;
     }
 
@@ -864,6 +943,17 @@ function setupScene() {
             button.offset.x = (button.originalDims.w - button.currentDims.w) / 2;
             UI_FLOAT.push(button);
         }
+        var min = Math.floor(Math.floor(level_timer) / 60);
+        var sec = Math.floor(level_timer) % 60;
+        SCENES.level.UI.win_menu.text[3].text = (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
+
+        var score = level_score.toString();
+        var zerosToAddToScore = 4 - score.length;
+        for (var i = 0; i < zerosToAddToScore; i++) {
+            score = '0' + score;
+        }
+        score = " " + score;
+        SCENES.level.UI.win_menu.text[4].text = score;
         for (let i in SCENES.level.UI.win_menu.text) {
             UI_FLOAT.push(SCENES.level.UI.win_menu.text[i]);
         }
@@ -876,7 +966,6 @@ function setupScene() {
 
 function generateCardGrid(setSize, nSets, anchor, dims) {
     var map = generateMatchMap(setSize, nSets);
-    console.log(map);
     do {
         var faces = Array.from({ length: nSets }, () => generateFace());
         if (!hasMatchingRows(faces)) {
@@ -946,6 +1035,8 @@ function setupLevel() {
     level_setSize = Math.ceil(currentLevel / 3) + 1;
     level_numSets = (currentLevel - 1) % 3 + 3;
 
+    level_timer = 0;
+    level_attempts = 0;
     level_flippedCards = 0;
     matchesMade = 0;
     generateCardGrid(level_setSize, level_numSets, screenToWorldSpace(0.1, 0.13), screenToWorldSpace(0.8, 0.87));
@@ -980,9 +1071,12 @@ var level_numSets = 0;
 var level_setSize = 0;
 var matchesMade = 0;
 
+var level_score = 0;
+var level_attempts = 0;
+
 var level_timer = 0;
 const level_CLOCK = new UIText(screenToWorldSpace(0.8, 0.03), "60", "'Courier new'",
-"white", "00:00", undefined, undefined, "right")
+    "white", "00:00", undefined, undefined, "right")
 
 function logicUpdate() {
     var faceUpCards = 0;
@@ -994,15 +1088,16 @@ function logicUpdate() {
         }
         if (faceUpCards === level_setSize) {
             checkForMatch();
+            level_attempts++;
         }
         if (matchesMade === level_numSets) {
             winLevel();
         }
     }
-    if(!gameIsPaused && !levelComplete){
+    if (!gameIsPaused && !levelComplete) {
         level_timer += deltaTime.delta;
     }
-    var min = Math.floor(Math.floor(level_timer)/60);
+    var min = Math.floor(Math.floor(level_timer) / 60);
     var sec = Math.floor(level_timer) % 60;
     level_CLOCK.text = (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
     UI.push(level_CLOCK);
@@ -1013,6 +1108,7 @@ function winLevel() {
     if (currentLevel === levelUnlock) {
         levelUnlock++;
     }
+    level_score = 1000 - Math.floor(level_timer * 1) - (level_attempts - level_numSets) * 10
     setupScene();
 }
 
