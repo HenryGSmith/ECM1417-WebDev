@@ -21,6 +21,7 @@ function saveDataInSession()
         $_SESSION["registered"] = false;
     } else {
         $_SESSION["registered"] = true;
+        $_SESSION["username"] = $data->username;
         $_SESSION["body"] = $data->body_radio;
         $_SESSION["eyes"] = $data->eyes_radio;
         $_SESSION["mouth"] = $data->mouth_radio;

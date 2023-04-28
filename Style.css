@@ -203,3 +203,9 @@ canvas {
 #submit-button:hover{
     background-color: #0a58ca !important;
 }
+
+/* leaderboard */
+.leaderboard{
+    background-color: gray;
+    box-shadow: 5px 5px;
+}

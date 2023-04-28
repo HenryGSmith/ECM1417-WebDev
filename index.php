@@ -1,10 +1,9 @@
 <?php
 include("./cookieManagement.php");
 
-if(!isset($_SESSION["registered"])){
-  session_start();
-  saveDataInSession();
-}
+session_start();
+saveDataInSession();
+
 ?>
 
 <!DOCTYPE html>

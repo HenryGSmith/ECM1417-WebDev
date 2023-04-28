@@ -1,8 +1,8 @@
 <?php
 include("./cookieManagement.php");
 
-if(!isset($_SESSION["registered"])){
-  session_start();
+session_start();
+if (!isset($_SESSION["registered"])) {
   saveDataInSession();
 }
 ?>
@@ -26,7 +26,9 @@ if(!isset($_SESSION["registered"])){
   <?php include "./navMenu.php"; ?>
 
   <div id="main">
-
+    <div class = "center leaderboard">
+      <h3>Leaderboard</h3>
+    </div>
   </div>
 </body>
 

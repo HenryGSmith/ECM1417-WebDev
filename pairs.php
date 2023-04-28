@@ -1,8 +1,8 @@
 <?php
 include("./cookieManagement.php");
 
+session_start();
 if (!isset($_SESSION["registered"])) {
-    session_start();
     saveDataInSession();
 }
 ?>

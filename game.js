@@ -14,10 +14,10 @@ const ctx = canvas.getContext("2d");
 //=====================================================
 //====================== UTILITY ======================
 
-var DATA = {
+const DATA = {
     data: []
 }
-var personalData = {
+const personalData = {
     name: "",
     icon: [],
     levelTimes: [],
@@ -26,15 +26,43 @@ var personalData = {
 }
 
 // create data profile for player
+var registered = true;
 var account = getCookie("data");
-var existingData =
-    personalData.name = account.username;
-personalData.icon[0] = account.body_radio;
-personalData.icon[1] = account.eyes_radio;
-personalData.icon[2] = account.mouth_radio;
-setCookie("gameData", personalData, "30");
+if (account === null) {
+    registered = false;
+}
 
-updateJSON(personalData);
+var existingData;
+if (registered) {
+    existingData = getCookie("gameData");
+
+    personalData.name = account.username;
+    personalData.icon[0] = account.body_radio;
+    personalData.icon[1] = account.eyes_radio;
+    personalData.icon[2] = account.mouth_radio;
+}
+
+personalData.levelScores = [];
+personalData.levelTimes = [];
+personalData.unlock = 1;
+
+if (existingData != null) {
+    if (existingData.name === personalData.name) {
+        personalData.levelScores = existingData.levelScores;
+        personalData.levelTimes = existingData.levelTimes;
+        personalData.unlock = existingData.unlock;
+
+    }
+}
+
+saveGameData(personalData);
+
+function saveGameData(playerData) {
+    if (registered) {
+        setCookie("gameData", playerData, "30");
+        updateJSON(playerData);
+    }
+}
 
 // dynamic screen fit
 function resizeCanvas() {
@@ -109,47 +137,39 @@ function getCookie(name) {
     return null;
 }
 
-function getJSON() {
-    var output_data;
-
+function getJSON(callback) {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', './gameData.json');
     xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        const responseData = JSON.parse(xhr.responseText);
-        console.log(responseData);
-      } else {
-        console.error('Error:', xhr.statusText);
-      }
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const responseData = JSON.parse(xhr.responseText);
+            callback(responseData); // Execute the callback function with the JSON data
+        } else {
+            console.error('Error:', xhr.statusText);
+        }
     };
-    xhr.onerror = function() {
-      console.error('Error:', xhr.statusText);
+    xhr.onerror = function () {
+        console.error('Error:', xhr.statusText);
     };
     xhr.send();
-
-    return output_data;
 }
 
 function updateJSON(object) {
-    const currentJsonData = getJSON();
-
-    console.log(DATA + " update");
-    console.log(currentJsonData + " update");
-    if(DATA.data.length === 0){
-        DATA.data.push(object);
-    }
-    for (let i in DATA.data) {
-        if (DATA.data[i].name === object.name) {
-            console.log(DATA.data[i].name);
-            console.log(object.name);
-            DATA.data[i] = object;
-        } else {
-            DATA.data.push(object);
-            console.log("add");
+    getJSON(function (currentJsonData) {
+        let objectExists = false;
+        for (let i in currentJsonData.data) {
+            if (currentJsonData.data[i].name === object.name) {
+                currentJsonData.data[i] = object;
+                objectExists = true;
+                break;
+            }
         }
-    }
-    saveJSON(DATA);
+        if (!objectExists) {
+            currentJsonData.data.push(object);
+        }
+        saveJSON(currentJsonData);
+    });
 }
 
 function saveJSON(object) {
@@ -701,7 +721,7 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
                 zoomVal = zoom;
             }
 
-            var button =
+            const button =
                 new UIButton(
                     [x + (i * gridWidth / 3) + difference / 2, y + (j * gridHeight / 3)],
                     [dim, dim], [dim + zoomVal, dim + zoomVal],
@@ -717,6 +737,21 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
                 );
             button.extraData = index;
             grid.push(button);
+
+            const timeData = personalData.levelTimes[index - 1];
+            const levelTime = (timeData === undefined) ? 0 : timeData;
+            const min = Math.floor(levelTime / 60);
+            const sec = Math.floor(levelTime) % 60;
+            const levelTimeStr = (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
+
+            const time = new UIText([
+                x + (i * gridWidth / 3) + difference / 2 + dim / 2,
+                y + (j * gridHeight / 3) + dim + 5
+            ],
+                "12px", "'Courier new'", "white", levelTimeStr,
+                undefined, undefined, "centre"
+            )
+            UI.push(time);
         }
     }
 
@@ -725,7 +760,7 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
 
 var currentScene = "start_menu";
 var currentLevel = 0;
-var levelUnlock = 1;
+var levelUnlock = personalData.unlock;
 var gameIsPaused = false;
 var updateLimiter = false;
 
@@ -872,7 +907,7 @@ const SCENES = {
                 ]
             }
         },
-        Background: []
+        Background: [new UIRect([0, 0], [canvasDims.width, canvasDims.height], "#293e55ff", 0)]
     }
 };
 
@@ -1101,6 +1136,13 @@ function logicUpdate() {
     var sec = Math.floor(level_timer) % 60;
     level_CLOCK.text = (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
     UI.push(level_CLOCK);
+
+    level_score = 1000 - Math.floor(level_timer * 1) - (level_attempts - level_numSets) * 10;
+    if (level_score > personalData.levelScores[currentLevel - 1]) {
+        BACKGROUND_ELEMS[0].color = "#FFD700";
+    } else {
+        BACKGROUND_ELEMS[0].color = "#FFD70000";
+    }
 }
 
 function winLevel() {
@@ -1108,7 +1150,26 @@ function winLevel() {
     if (currentLevel === levelUnlock) {
         levelUnlock++;
     }
-    level_score = 1000 - Math.floor(level_timer * 1) - (level_attempts - level_numSets) * 10
+    level_score = 1000 - Math.floor(level_timer * 1) - (level_attempts - level_numSets) * 10;
+
+    var index = currentLevel - 1;
+    if (personalData.levelScores.length >= currentLevel) {
+        const currentScore = personalData.levelScores[index];
+        const currentTime = personalData.levelTimes[index];
+        if (currentScore < level_score) {
+            personalData.levelScores[index] = level_score;
+        }
+        if (currentTime > Math.floor(level_timer)) {
+            personalData.levelTimes[index] = Math.floor(level_timer);
+        }
+    } else {
+        personalData.levelScores.push(level_score);
+        personalData.levelTimes.push(Math.floor(level_timer));
+    }
+
+    personalData.unlock = levelUnlock
+    saveGameData(personalData);
+
     setupScene();
 }
 
