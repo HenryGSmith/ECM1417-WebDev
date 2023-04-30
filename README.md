@@ -16,9 +16,10 @@
 - if registered username will already populate username feild
     - title changes to 'update profile'
     - submit changes to 'update'
+- profile saved to cookie and session variables
 
 # Pairs game page
-- complex attempted
+- Complex attempted
 - music plays on game start
     - 3 songs on shuffle then repeat
 - level select screen unlocks as levels completed
