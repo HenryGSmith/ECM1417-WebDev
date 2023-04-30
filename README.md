@@ -1,3 +1,6 @@
+Henry Grantham-Smith  -  candidate number: 249904
+http://ml-lab-4d78f073-aa49-4f0e-bce2-31e5254052c7.ukwest.cloudapp.azure.com:60518/
+
 # page content
 - nav bar
     - register switches to icon
