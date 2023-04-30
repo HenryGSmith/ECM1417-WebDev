@@ -36,4 +36,4 @@
 
 # Leaderboard page
 - leaderboard displays top 100 players
-- shows rank, icon, username, total score, and level scores
+- shows rank, icon, username, total score, and level scores/times
