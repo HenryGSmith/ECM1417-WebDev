@@ -118,7 +118,7 @@ html, body{
 
 /* game window */
 .GameDiv {
-    background-color: #293e55;
+    background-color: gray;
     box-shadow: 5px 5px;
     width: fit-content;
     height: fit-content;
@@ -179,21 +179,31 @@ canvas {
 /* Avatar */
 .avatar-container{
     position:relative;
+    width: 500px;
+    height: 500px;
     margin:8px;
+}
+.avatar-container.icon{
+    width: 30px;
+    height: 30px;
 }
 
 .avatar-image-1{
-    position: relative;
+    position: absolute;
+    left: 0px;
+    top: 0px;
     z-index: 1;
 }
 .avatar-image-2{
     position: absolute;
     left: 0px;
+    top: 0px;
     z-index: 2;
 }
 .avatar-image-3{
     position: absolute;
     left: 0px;
+    top: 0px;
     z-index: 3;
 }
 
@@ -207,5 +217,37 @@ canvas {
 /* leaderboard */
 .leaderboard{
     background-color: gray;
-    box-shadow: 5px 5px;
+    box-shadow: 5px 5px black;
+    align-content: center;
+    text-align: center;
+    padding: 1%;
+    color: white;
+}
+
+table{
+    width: 90vw;
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+td, th:not(:empty) {
+    border-spacing: 2px;
+    border-color: #293e55;
+    text-align: center;
+    border: 1px solid black;
+}
+th:empty{
+    border: none;
+}
+th{
+    color: white;
+    background-color: blue;
+}
+
+td.no-right-border{
+    border-right: none;
+    width:30px;
+}
+td.no-left-border{
+    border-left: none;
+    text-align: left;
 }

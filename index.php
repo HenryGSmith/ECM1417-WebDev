@@ -22,15 +22,19 @@ saveDataInSession();
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
     crossorigin="anonymous"></script>
+  <script>
+    window.scrollTo({ top: 0, behavior: "auto" });
+    document.body.style.overflow = "hidden";
+  </script>
 
   <?php include "./navMenu.php" ?>
   <div id="main">
     <div id="welcome" class="center">
       <h1>Welcome to Pairs</h1>
       <?php
-      if($_SESSION["registered"]){
+      if ($_SESSION["registered"]) {
         echo '<a id="click-to-play" class="btn btn-primary btn-lg btn-block" href="./pairs.php">Click here to play</a>';
-      }else{
+      } else {
         echo '<p>You\'re not using a registered session? <a href="./registration.php" class="btn btn-link">Register now</a></p>';
       }
       ?>

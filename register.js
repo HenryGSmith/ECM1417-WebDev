@@ -28,7 +28,7 @@ window.onload = function () {
     var isValid = true;
 
     var invalidChars = ["\"", "!", "@", "#", "%", "&", "*", "(", ")", "+", "=", "^", "{", "}", "[", "]", "—", "-", ";", ":", "“", "`", "<", ">", "?", "/", " "];
-    input.onchange = function () {
+    input.oninput = function () {
         isValid = true;
         var problemCharacter = ""
         for (var i = 0; i < invalidChars.length; i++) {

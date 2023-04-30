@@ -1,23 +1,41 @@
-//=====================================================
-//=================== CANVAS SET-UP ===================
+//=========================================================\\                                   
+//                                                         \\
+//           ______  __    __  ______  _______             \\
+//          /      \|  \  |  \/      \|       \            \\
+//          |  ▓▓▓▓▓▓\ ▓▓\ | ▓▓  ▓▓▓▓▓▓\ ▓▓▓▓▓▓▓\          \\
+//          | ▓▓___\▓▓ ▓▓▓\| ▓▓ ▓▓__| ▓▓ ▓▓__/ ▓▓          \\
+//           \▓▓    \| ▓▓▓▓\ ▓▓ ▓▓    ▓▓ ▓▓    ▓▓          \\
+//           _\▓▓▓▓▓▓\ ▓▓\▓▓ ▓▓ ▓▓▓▓▓▓▓▓ ▓▓▓▓▓▓▓           \\
+//          |  \__| ▓▓ ▓▓ \▓▓▓▓ ▓▓  | ▓▓ ▓▓                \\
+//           \▓▓    ▓▓ ▓▓  \▓▓▓ ▓▓  | ▓▓ ▓▓                \\
+//            \▓▓▓▓▓▓ \▓▓   \▓▓\▓▓   \▓▓\▓▓                \\
+//                                                         \\
+//=========================================================\\                                    
+//                                     
+    
+
+//=========================================================
+//===================== CANVAS SET-UP =====================
 
 const canvas = document.querySelector("canvas");
+window.scrollTo({ top: 0, behavior: "auto" });
+document.body.style.overflow = "hidden";
 
 // internal canvas space dimenesions
-const canvasDims = { width: 1200, height: 185 * 4 };
+const canvasDims = { width: 1200, height: 740 };
 canvas.width = canvasDims.width;
 canvas.height = canvasDims.height;
 
 // - 2d context
 const ctx = canvas.getContext("2d");
 
-//=====================================================
-//====================== UTILITY ======================
+//=========================================================
+//======================== UTILITY ========================
 
 const DATA = {
     data: []
 }
-const personalData = {
+const playerData = {
     name: "",
     icon: [],
     levelTimes: [],
@@ -26,92 +44,102 @@ const personalData = {
 }
 
 // create data profile for player
-var registered = true;
-var account = getCookie("data");
-if (account === null) {
-    registered = false;
-}
+const account = getCookie("data");
+const registered = account !== null;
 
-var existingData;
 if (registered) {
-    existingData = getCookie("gameData");
-
-    personalData.name = account.username;
-    personalData.icon[0] = account.body_radio;
-    personalData.icon[1] = account.eyes_radio;
-    personalData.icon[2] = account.mouth_radio;
+    playerData.name = account.username;
+    playerData.icon[0] = account.body_radio;
+    playerData.icon[1] = account.eyes_radio;
+    playerData.icon[2] = account.mouth_radio;
 }
 
-personalData.levelScores = [];
-personalData.levelTimes = [];
-personalData.unlock = 1;
-
-if (existingData != null) {
-    if (existingData.name === personalData.name) {
-        personalData.levelScores = existingData.levelScores;
-        personalData.levelTimes = existingData.levelTimes;
-        personalData.unlock = existingData.unlock;
-
+const savedGameData = getCookie("gameData");
+if (savedGameData !== null) {
+    if (savedGameData.name === playerData.name) {
+        playerData.levelScores = savedGameData.levelScores;
+        playerData.levelTimes = savedGameData.levelTimes;
+        playerData.unlock = savedGameData.unlock;
     }
 }
 
-saveGameData(personalData);
+
+saveGameData(playerData);
+
 
 function saveGameData(playerData) {
     if (registered) {
-        setCookie("gameData", playerData, "30");
         updateJSON(playerData);
+        setCookie("gameData", playerData, "30");
     }
 }
 
 // dynamic screen fit
-function resizeCanvas() {
-    // resize the canvas to fit the window while 
-    // preserving the aspect ratio and ensuring that
-    // the whole canvas is allways on screen
-
-    let dims = {
-        width: window.innerWidth,
-        height: (canvasDims.height / canvasDims.width) * window.innerWidth
+function debounce(func, wait) {
+    let timeout;
+    return function () {
+        const context = this;
+        const args = arguments;
+        const later = function () {
+            timeout = null;
+            func.apply(context, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
     };
-
-    var aspectRatio = canvasDims.width / canvasDims.height;
-    canvas.style.aspectRatio = aspectRatio;
-
-    var distToTop = window.pageYOffset + canvas.getBoundingClientRect().top;
-    var vh = window.innerHeight / 100;
-    var vw = window.innerWidth / 100;
-    var height = window.innerHeight - (distToTop + vh * 10)
-
-    if (height > dims.height) {
-        // base height off of width
-        canvas.style.width = dims.width - 2 * vw + "px";
-        canvas.style.height = dims.height + "px";
-
-        GLOBALS.screen.width = dims.width - 2 * vw;
-        GLOBALS.screen.height = dims.height;
-    } else {
-        // base width off of height
-        var width = height * aspectRatio + "px"
-        canvas.style.height = height + "px";
-        canvas.style.width = width;
-
-        GLOBALS.screen.width = height * aspectRatio;
-        GLOBALS.screen.height = height;
-    }
 }
 
-window.addEventListener("resize", resizeCanvas);
+
+function resizeCanvas() {
+    // Get dimensions of the window
+    let windowWidth = window.innerWidth;
+    let windowHeight = window.innerHeight;
+
+    // Account for any UI elements that reduce available space
+    let navbarHeight = document.querySelector('.navbar').offsetHeight;
+    let topOffset = navbarHeight + 100;
+    let scrollbarWidth = window.innerWidth - document.documentElement.clientWidth + 20;
+
+    // Calculate available canvas dimensions
+    let availableWidth = windowWidth - scrollbarWidth;
+    let availableHeight = windowHeight - topOffset;
+
+    // Calculate aspect ratio of the canvas
+    let aspectRatio = canvasDims.width / canvasDims.height;
+
+    // Calculate dimensions of the canvas
+    let canvasWidth = availableWidth;
+    let canvasHeight = availableWidth / aspectRatio;
+
+    // If canvas height is too big for the window, adjust canvas dimensions again
+    if (canvasHeight > availableHeight) {
+        canvasHeight = availableHeight;
+        canvasWidth = canvasHeight * aspectRatio;
+    }
+
+    // Set canvas dimensions
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // Set scale for drawing context
+    let scaleX = canvasWidth / canvasDims.width;
+    let scaleY = canvasHeight / canvasDims.height;
+    ctx.scale(scaleX, scaleY);
+}
+
+
+
+window.addEventListener("resize", debounce(resizeCanvas, 250));
 
 function lerp(startValue, endValue, t) {
-    return (startValue + (endValue - startValue) * t);
+    return startValue + (endValue - startValue) * t;
 }
 
 function screenToWorldSpace(x, y) {
     // screen space 0 to 1 on width and height
     // world space = canvas space
-    xWorld = lerp(0, canvasDims.width, x);
-    yWorld = lerp(0, canvasDims.height, y);
+    const xWorld = lerp(0, canvasDims.width, x);
+    const yWorld = lerp(0, canvasDims.height, y);
 
     return [xWorld, yWorld];
 }
@@ -126,16 +154,16 @@ function setCookie(cname, cobject, exdays) {
 
 function getCookie(name) {
     const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.startsWith(name + '=')) {
-            const jsonStr = cookie.substring(name.length + 1);
-            const output = decodeURIComponent(jsonStr)
+    for (const cookie of cookies) {
+        const [cookieName, cookieValue] = cookie.split('=').map(c => c.trim());
+        if (cookieName === name) {
+            const output = decodeURIComponent(cookieValue);
             return JSON.parse(output);
         }
     }
     return null;
 }
+
 
 function getJSON(callback) {
     const xhr = new XMLHttpRequest();
@@ -214,47 +242,61 @@ function hasMatchingRows(arr) {
     return false;
 }
 
-//====================================================
-//================= INPUT MANAGEMENT =================
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+//========================================================
+//=================== INPUT MANAGEMENT ===================
+
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvasDims.width / rect.width;
+    var scaleY = canvasDims.height / rect.height;
+
+    return {
+        x: (evt.clientX - rect.left) * scaleX,
+        y: (evt.clientY - rect.top) * scaleY
+    };
+}
 
 canvas.addEventListener("mousemove", (e) => {
-    GLOBALS.mouse.x = (e.offsetX / GLOBALS.screen.width) * canvas.width;
-    GLOBALS.mouse.y = (e.offsetY / GLOBALS.screen.height) * canvas.height;
+    GLOBALS.mousePosition = getMousePos(canvas, e);
 })
 
 canvas.addEventListener("click", (e) => {
-    if (e.button === 0) {
-        for (let i in UI_FLOAT) {
-            if (UI_FLOAT[i].isZoomed) {
-                UI_FLOAT[i].onClick();
+    switch (e.button) {
+        case 0:
+            for (const ui of UI_FLOAT) {
+                if (ui.isZoomed) {
+                    ui.onClick();
+                }
             }
-        }
-        if (gameIsPaused) {
-            return;
-        }
-        for (let i in UI) {
-            if (UI[i].isZoomed) {
-                UI[i].onClick();
+            if (gameIsPaused) {
+                return;
             }
-        }
-        for (let p in CARDS) {
-            if (CARDS[p].isHovered) {
-                CARDS[p].onClick();
+            for (const ui of UI) {
+                if (ui.isZoomed) {
+                    ui.onClick();
+                }
             }
-        }
+            for (const card of CARDS) {
+                if (card.isHovered) {
+                    card.onClick();
+                }
+            }
+            break;
+        default:
+            break;
     }
-})
+});
 
-//====================================================
-//================ RENDERING PIPELINE ================
-
-//-----------------------------------------------------
-//---------------------- SPRITES ----------------------
-
-function square(x, y) {
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+//========================================================
+//================== RENDERING PIPELINE ==================
 
 //----------------------------------------------------
 //------------------ OBJECT SPRITES ------------------
@@ -287,7 +329,7 @@ class UIButton {
             this.currentDims.h = lerp(this.originalDims.h, this.zoomedDims.h, this.AnimCounter.zoomIn);
             this.offset.x = (this.originalDims.w - this.currentDims.w) / 2;
             this.offset.y = (this.originalDims.h - this.currentDims.h) / 2;
-            this.AnimCounter.zoomIn += speed * deltaTime.delta;
+            this.AnimCounter.zoomIn += speed * deltaTime.get('delta');
         } else {
             this.AnimCounter.zoomIn = 0;
             this.zoomInAnimRunning = false;
@@ -300,7 +342,7 @@ class UIButton {
             this.currentDims.h = lerp(this.zoomedDims.h, this.originalDims.h, this.AnimCounter.zoomOut);
             this.offset.y = (this.originalDims.h - this.currentDims.h) / 2;
             this.offset.x = (this.originalDims.w - this.currentDims.w) / 2;
-            this.AnimCounter.zoomOut += speed * deltaTime.delta;
+            this.AnimCounter.zoomOut += speed * deltaTime.get('delta');
         } else {
             this.AnimCounter.zoomOut = 0;
             this.zoomOutAnimRunning = false;
@@ -317,8 +359,8 @@ class UIButton {
     // object management
     update() {
         // hovering over the button
-        var xBound = GLOBALS.mouse.x >= this.anchor.x + this.offset.x && GLOBALS.mouse.x <= this.anchor.x + this.offset.x + this.currentDims.w;
-        var yBound = GLOBALS.mouse.y >= this.anchor.y + this.offset.y && GLOBALS.mouse.y <= this.anchor.y + this.offset.y + this.currentDims.h;
+        var xBound = GLOBALS.mousePosition.x >= this.anchor.x + this.offset.x && GLOBALS.mousePosition.x <= this.anchor.x + this.offset.x + this.currentDims.w;
+        var yBound = GLOBALS.mousePosition.y >= this.anchor.y + this.offset.y && GLOBALS.mousePosition.y <= this.anchor.y + this.offset.y + this.currentDims.h;
         if (xBound && yBound) {
             if (!this.zoomInAnimRunning && !this.isZoomed) {
                 this.isZoomed = true;
@@ -440,7 +482,7 @@ class card {
             // change image
         }
         if (this.AnimCounter.flip <= Math.PI) {
-            this.AnimCounter.flip += speed * deltaTime.delta;
+            this.AnimCounter.flip += speed * deltaTime.get('delta');
         }
         else {
             this.AnimCounter.flip = 0;
@@ -457,7 +499,7 @@ class card {
             this.currentDims.h = lerp(this.originalDims.h, this.zoomedDims.h, this.AnimCounter.zoomIn);
             this.offset.x = (this.originalDims.w - this.currentDims.w) / 2;
             this.offset.y = (this.originalDims.h - this.currentDims.h) / 2;
-            this.AnimCounter.zoomIn += speed * deltaTime.delta;
+            this.AnimCounter.zoomIn += speed * deltaTime.get('delta');
         } else {
             this.AnimCounter.zoomIn = 0;
             this.zoomInAnimRunning = false;
@@ -470,7 +512,7 @@ class card {
             this.currentDims.h = lerp(this.zoomedDims.h, this.originalDims.h, this.AnimCounter.zoomOut);
             this.offset.y = (this.originalDims.h - this.currentDims.h) / 2;
             this.offset.x = (this.originalDims.w - this.currentDims.w) / 2;
-            this.AnimCounter.zoomOut += speed * deltaTime.delta;
+            this.AnimCounter.zoomOut += speed * deltaTime.get('delta');
         } else {
             this.AnimCounter.zoomOut = 0;
             this.zoomOutAnimRunning = false;
@@ -483,7 +525,7 @@ class card {
         }
     }
     removeAnim(speed = 2500) {
-        this.offset.x += speed * deltaTime.delta;
+        this.offset.x += speed * deltaTime.get('delta');
         if (this.offset.x + this.anchor.x >= canvasDims.width + this.zoomedDims.w) {
             var index = CARDS.indexOf(this);
             if (index > -1) {
@@ -507,8 +549,8 @@ class card {
 
     update() {
         // hovering over the card
-        var xBound = GLOBALS.mouse.x >= this.anchor.x + this.offset.x && GLOBALS.mouse.x <= this.anchor.x + this.offset.x + this.currentDims.w;
-        var yBound = GLOBALS.mouse.y >= this.anchor.y + this.offset.y && GLOBALS.mouse.y <= this.anchor.y + this.offset.y + this.currentDims.h;
+        var xBound = GLOBALS.mousePosition.x >= this.anchor.x + this.offset.x && GLOBALS.mousePosition.x <= this.anchor.x + this.offset.x + this.currentDims.w;
+        var yBound = GLOBALS.mousePosition.y >= this.anchor.y + this.offset.y && GLOBALS.mousePosition.y <= this.anchor.y + this.offset.y + this.currentDims.h;
         if (!this.flipAnimRunning) {
             if (xBound && yBound) {
                 this.isHovered = true;
@@ -560,9 +602,9 @@ class card {
             ctx.stroke();
         } else {
             var margin = { x: this.currentDims.w / 10, y: this.zoomedDims.w / 10 }
-            var img1 = GLOBALS.Images.body[this.extraData[0]];
-            var img2 = GLOBALS.Images.eyes[this.extraData[1]];
-            var img3 = GLOBALS.Images.mouth[this.extraData[2]];
+            var img1 = GLOBALS.emojiImages.body[this.extraData[0]];
+            var img2 = GLOBALS.emojiImages.eyes[this.extraData[1]];
+            var img3 = GLOBALS.emojiImages.mouth[this.extraData[2]];
             var width = this.currentDims.w - margin.x;
             var height = this.zoomedDims.w - margin.y;
             var offset = { x: margin.x / 2, y: (this.zoomedDims.h - height) / 2 };
@@ -577,42 +619,44 @@ class card {
 //-----------------------------------------------------
 //------------------ FRAME RENDERING ------------------
 
-// globally accessable states
 const GLOBALS = {
-    mouse: { x: 0, y: 0 },
-    screen: { width: 0, height: 0 },
-    Images: {
-        body: [
-            new Image(), new Image(), new Image()],
-        eyes: [
-            new Image(), new Image(), new Image(),
-            new Image(), new Image(), new Image()
-        ],
-        mouth: [
-            new Image(), new Image(), new Image(),
-            new Image(), new Image(), new Image()
-        ]
-    }
+    mousePosition: { x: 0, y: 0 },
+    screenSize: { width: 0, height: 0 },
+    emojiImages: {
+        body: [],
+        eyes: [],
+        mouth: []
+    },
+    isMusicPlaying: false
 };
 
-// emoji images
-GLOBALS.Images.body[0].src = "/emojiAssets/body/green.png";
-GLOBALS.Images.body[1].src = "/emojiAssets/body/red.png";
-GLOBALS.Images.body[2].src = "/emojiAssets/body/yellow.png";
+// Preload images
+const preloadImages = () => {
+    const preloadContainer = document.createElement("div");
+    preloadContainer.style.display = "none";
 
-GLOBALS.Images.eyes[0].src = "/emojiAssets/eyes/closed.png";
-GLOBALS.Images.eyes[1].src = "/emojiAssets/eyes/laughing.png";
-GLOBALS.Images.eyes[2].src = "/emojiAssets/eyes/long.png";
-GLOBALS.Images.eyes[3].src = "/emojiAssets/eyes/normal.png";
-GLOBALS.Images.eyes[4].src = "/emojiAssets/eyes/rolling.png";
-GLOBALS.Images.eyes[5].src = "/emojiAssets/eyes/winking.png";
+    const imageUrls = [
+        ["/emojiAssets/body/green.png", "/emojiAssets/body/red.png", "/emojiAssets/body/yellow.png"],
+        ["/emojiAssets/eyes/closed.png", "/emojiAssets/eyes/laughing.png", "/emojiAssets/eyes/long.png", "/emojiAssets/eyes/normal.png", "/emojiAssets/eyes/rolling.png", "/emojiAssets/eyes/winking.png"],
+        ["/emojiAssets/mouth/open.png", "/emojiAssets/mouth/sad.png", "/emojiAssets/mouth/smiling.png", "/emojiAssets/mouth/straight.png", "/emojiAssets/mouth/surprise.png", "/emojiAssets/mouth/teeth.png"]
+    ];
 
-GLOBALS.Images.mouth[0].src = "/emojiAssets/mouth/open.png";
-GLOBALS.Images.mouth[1].src = "/emojiAssets/mouth/sad.png";
-GLOBALS.Images.mouth[2].src = "/emojiAssets/mouth/smiling.png";
-GLOBALS.Images.mouth[3].src = "/emojiAssets/mouth/straight.png";
-GLOBALS.Images.mouth[4].src = "/emojiAssets/mouth/surprise.png";
-GLOBALS.Images.mouth[5].src = "/emojiAssets/mouth/teeth.png";
+    for (let i = 0; i < imageUrls.length; i++) {
+        const imageArray = imageUrls[i];
+        const imageType = Object.keys(GLOBALS.emojiImages)[i];
+        GLOBALS.emojiImages[imageType] = imageArray.map(url => {
+            const image = new Image();
+            image.src = url;
+            preloadContainer.appendChild(image);
+            return image;
+        });
+    }
+
+    document.body.appendChild(preloadContainer);
+};
+
+// Call preloadImages to preload the images
+preloadImages();
 
 //storage of all interactable elements
 const CARDS = [];
@@ -621,35 +665,43 @@ const UI_FLOAT = [];
 
 // renders background elements
 const BACKGROUND_ELEMS = [];
+
 function renderBackground() {
-    for (let i in BACKGROUND_ELEMS) {
-        BACKGROUND_ELEMS[i].render();
+    for (let elem of BACKGROUND_ELEMS) {
+        elem.render();
     }
 }
 
 // renders prop objects from PROPS
 function renderProps() {
-    var renderOrder = [];
-    var zoomedCards = [];
-    for (let i in CARDS) {
-        if (CARDS[i].removeAnimRunning) {
-            zoomedCards.push(CARDS[i]);
+    const renderOrder = [];
+    const zoomedCards = [];
+    const numCards = CARDS.length;
+    for (let i = 0; i < numCards; i++) {
+        const card = CARDS[i];
+        if (card.removeAnimRunning) {
+            zoomedCards.push(card);
         } else {
-            renderOrder.push(CARDS[i]);
+            renderOrder.push(card);
         }
     }
-    renderOrder = renderOrder.concat(zoomedCards);
-    for (let i in renderOrder) {
-        renderOrder[i].render();
+    const numZoomedCards = zoomedCards.length;
+    for (let i = 0; i < numZoomedCards; i++) {
+        renderOrder.push(zoomedCards[i]);
     }
-    for (let i in UI) {
+    for (let card of renderOrder) {
+        card.render();
+    }
+    const numUI = UI.length;
+    for (let i = 0; i < numUI; i++) {
         UI[i].render();
     }
 }
 
+
 function renderFloatUI() {
-    for (let i in UI_FLOAT) {
-        UI_FLOAT[i].render();
+    for (let elem of UI_FLOAT) {
+        elem.render();
     }
 }
 
@@ -658,7 +710,6 @@ function startFrames() {
     //reset update limit for on screen button presses.
     updateLimiter = false;
     setDelta();
-    //console.log(Math.round(1/deltaTime.delta));
 
     //update game logic
     if (currentScene === "level") {
@@ -666,7 +717,7 @@ function startFrames() {
     }
 
     // erase canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvasDims.width, canvasDims.height);
 
     // render entities in order
     renderBackground();
@@ -677,19 +728,20 @@ function startFrames() {
     window.requestAnimationFrame(startFrames);
 }
 
-const deltaTime = {
-    now: 0,
-    delta: 0,
-    then: 0
-}
+const deltaTime = new Map([
+    ['now', 0],
+    ['delta', 0],
+    ['then', 0]
+]);
+
 function setDelta() {
-    deltaTime.then = deltaTime.now;
-    deltaTime.now = Date.now();
-    deltaTime.delta = (deltaTime.now - deltaTime.then) / 1000;
+    deltaTime.set('then', deltaTime.get('now'));
+    deltaTime.set('now', Date.now());
+    deltaTime.set('delta', (deltaTime.get('now') - deltaTime.get('then')) / 1000);
 }
 
-//====================================================
-//==================== GAME LOGIC ====================
+//========================================================
+//====================== GAME LOGIC ======================
 
 // applies initial settings
 function init() {
@@ -698,21 +750,19 @@ function init() {
 }
 
 function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
-    var grid = [];
-    var x = anchor[0];
-    var y = anchor[1];
-    var gridWidth = dims[0];
-    var gridHeight = dims[1];
+    const grid = [];
+    const x = anchor[0];
+    const y = anchor[1];
+    const gridWidth = dims[0];
+    const gridHeight = dims[1];
+    const dim = (gridHeight / 3) - screenToWorldSpace(buffer, 0)[0];
+    const difference = gridWidth / 3 - dim;
+    let color = "";
+    let zoomVal = zoom;
 
-    var dim = (gridHeight / 3) - screenToWorldSpace(buffer, 0)[0];
-    var difference = gridWidth / 3 - dim;
-
-    var zoomVal = zoom
-
-    for (var i = 0; i < 3; i++) {
-        for (var j = 0; j < 3; j++) {
-            var index = 3 * j + i + 1;
-            var color = "";
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            const index = 3 * j + i + 1;
             if (index > levelUnlock) {
                 color = "#546375";
                 zoomVal = 0;
@@ -721,35 +771,42 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
                 zoomVal = zoom;
             }
 
-            const button =
-                new UIButton(
-                    [x + (i * gridWidth / 3) + difference / 2, y + (j * gridHeight / 3)],
-                    [dim, dim], [dim + zoomVal, dim + zoomVal],
-                    (n) => {
-                        if (n <= levelUnlock) {
-                            currentScene = "level"
-                            currentLevel = n;
-                            setupLevel();
-                            setupScene();
-                        }
-                    },
-                    index, color
-                );
+            const button = new UIButton(
+                [x + (i * gridWidth / 3) + difference / 2, y + (j * gridHeight / 3)],
+                [dim, dim],
+                [dim + zoomVal, dim + zoomVal],
+                (n) => {
+                    if (n <= levelUnlock) {
+                        currentScene = "level"
+                        currentLevel = n;
+                        setupLevel();
+                        setupScene();
+                    }
+                },
+                index,
+                color
+            );
             button.extraData = index;
             grid.push(button);
 
-            const timeData = personalData.levelTimes[index - 1];
+            const timeData = playerData.levelTimes[index - 1];
             const levelTime = (timeData === undefined) ? 0 : timeData;
             const min = Math.floor(levelTime / 60);
             const sec = Math.floor(levelTime) % 60;
-            const levelTimeStr = (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
+            const levelTimeStr = `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
 
-            const time = new UIText([
-                x + (i * gridWidth / 3) + difference / 2 + dim / 2,
-                y + (j * gridHeight / 3) + dim + 5
-            ],
-                "12px", "'Courier new'", "white", levelTimeStr,
-                undefined, undefined, "centre"
+            const time = new UIText(
+                [
+                    x + (i * gridWidth / 3) + difference / 2 + dim / 2,
+                    y + (j * gridHeight / 3) + dim + 5
+                ],
+                "12px",
+                "'Courier new'",
+                "white",
+                levelTimeStr,
+                undefined,
+                undefined,
+                "centre"
             )
             UI.push(time);
         }
@@ -758,13 +815,15 @@ function generateLevelGrid(anchor, dims, zoom, buffer = 0.04) {
     return grid;
 }
 
+
 var currentScene = "start_menu";
 var currentLevel = 0;
-var levelUnlock = personalData.unlock;
+var levelUnlock = playerData.unlock;
 var gameIsPaused = false;
 var updateLimiter = false;
 
 var levelComplete = false;
+var levelLost = false;
 
 
 const SCENES = {
@@ -776,6 +835,11 @@ const SCENES = {
                     () => {
                         currentScene = "level_select"
                         setupScene();
+                        if (!GLOBALS.isMusicPlaying) {
+                            playTracks();
+                            GLOBALS.isMusicPlaying = true;
+                        }
+
                     },
                     "Start the game")
             ],
@@ -820,7 +884,7 @@ const SCENES = {
             ],
             text: [
                 new UIText(screenToWorldSpace(0.2, 0.03), "60", "'Courier new'",
-                    "white", "Match " + level_setSize, undefined, undefined, "left")
+                    "white", "Match " + level_setSize + " cards", undefined, undefined, "left")
             ],
 
             pauseMenu: {
@@ -905,6 +969,40 @@ const SCENES = {
                 sprites: [
                     new UIRect(screenToWorldSpace(0.25, 0.175), screenToWorldSpace(0.5, 0.65), "#21897e", 10)
                 ]
+            },
+
+            loss_menu: {
+                buttons: [
+                    new UIButton(
+                        screenToWorldSpace(0.4, 0.55), screenToWorldSpace(0.2, 0.1), screenToWorldSpace(0.21, 0.11),
+                        () => {
+                            levelLost = false;
+                            updateLimiter = true;
+                            currentScene = "level_select";
+                            setupScene();
+                            currentScene = "level";
+                            setupLevel();
+                            setupScene();
+                        },
+                        "Retry"),
+                    new UIButton(
+                        screenToWorldSpace(0.375, 0.7), screenToWorldSpace(0.25, 0.1), screenToWorldSpace(0.26, 0.11),
+                        () => {
+                            levelLost = false;
+                            currentScene = "level_select";
+                            setupScene();
+                        },
+                        "Return to Menu")
+                ],
+                text: [
+                    new UIText(
+                        screenToWorldSpace(0.5, 0.22), "52", "'Courier new'", "white", "⊣ LEVEL LOST ⊢",
+                        undefined, undefined, "center"
+                    ),
+                ],
+                sprites: [
+                    new UIRect(screenToWorldSpace(0.25, 0.175), screenToWorldSpace(0.5, 0.65), "#21897e", 10)
+                ]
             }
         },
         Background: [new UIRect([0, 0], [canvasDims.width, canvasDims.height], "#293e55ff", 0)]
@@ -939,7 +1037,7 @@ function setupScene() {
     }
 
     if (currentScene === "level") {
-        SCENES[currentScene].UI.text[0].text = "Match " + level_setSize;
+        SCENES[currentScene].UI.text[0].text = "Match " + level_setSize + " cards";
     }
 
     for (let i in SCENES[currentScene].UI.text) {
@@ -994,75 +1092,110 @@ function setupScene() {
         }
     }
 
+    if (levelLost) {
+        for (let i in SCENES.level.UI.loss_menu.sprites) {
+            UI_FLOAT.push(SCENES.level.UI.loss_menu.sprites[i]);
+        }
+        for (let i in SCENES.level.UI.loss_menu.buttons) {
+            var button = SCENES.level.UI.loss_menu.buttons[i];
+            button.currentDims.w = button.originalDims.w;
+            button.currentDims.h = button.originalDims.h;
+            button.offset.y = (button.originalDims.h - button.currentDims.h) / 2;
+            button.offset.x = (button.originalDims.w - button.currentDims.w) / 2;
+            UI_FLOAT.push(button);
+        }
+
+        for (let i in SCENES.level.UI.loss_menu.text) {
+            UI_FLOAT.push(SCENES.level.UI.loss_menu.text[i]);
+        }
+    }
+
 }
 
 //-----------------------------------------------------
 //-------------------- LEVEL LOGIC --------------------
 
 function generateCardGrid(setSize, nSets, anchor, dims) {
-    var map = generateMatchMap(setSize, nSets);
-    do {
-        var faces = Array.from({ length: nSets }, () => generateFace());
-        if (!hasMatchingRows(faces)) {
-            break;
-        }
-    } while (true)
+    const map = generateMatchMap(setSize, nSets);
+    const cardPlaceDims = { w: dims[0] / nSets, h: dims[1] / setSize };
+    const buffer = screenToWorldSpace(0.02, 0)[0];
+    let cardHeight = cardPlaceDims.h - buffer * 2;
+    let cardWidth = cardHeight * (5 / 7);
 
-    var buffer = screenToWorldSpace(0.02, 0)[0];
-    var cardPlaceDims = { w: dims[0] / nSets, h: dims[1] / setSize };
-    var cardHeight = cardPlaceDims.h - buffer * 2
-    var cardWidth = cardHeight * (5 / 7);
     if (cardWidth + buffer > cardPlaceDims.w) {
         cardWidth = cardPlaceDims.w - buffer * 2;
         cardHeight = cardWidth * (7 / 5);
     }
-    var widthOffset = (cardPlaceDims.w - cardWidth) / 2;
 
-    for (let j in map) {
-        for (let i in map[0]) {
+    const widthOffset = (cardPlaceDims.w - cardWidth) / 2;
+    const faces = [];
+    let hasMatching = false;
+
+    do {
+        hasMatching = false;
+        for (let i = 0; i < nSets; i++) {
+            faces[i] = generateFace();
+        }
+        hasMatching = hasMatchingRows(faces);
+    } while (hasMatching);
+
+    for (let j = 0, rows = map.length; j < rows; j++) {
+        const columns = map[0].length;
+        for (let i = 0; i < columns; i++) {
+            const x = anchor[0] + i * cardPlaceDims.w + widthOffset;
+            const y = anchor[1] + j * cardPlaceDims.h + buffer / 2;
+            const cardWidthWithBuffer = cardWidth + buffer;
+            const cardHeightWithBuffer = cardHeight + buffer;
+            const cardColor = "#21897e";
+            const backColor = "#d72638";
+            const borderRadius = 7;
+            const cardFace = faces[map[j][i]];
+
             CARDS.push(new card(
-                [anchor[0] + i * cardPlaceDims.w + widthOffset, anchor[1] + j * cardPlaceDims.h + buffer / 2],
+                [x, y],
                 [cardWidth, cardHeight],
-                [cardWidth + buffer, cardHeight + buffer],
-                "#21897e", "#d72638",
-                7, faces[map[j][i]]
+                [cardWidthWithBuffer, cardHeightWithBuffer],
+                cardColor, backColor,
+                borderRadius, cardFace
             ));
         }
     }
 }
 
+
 function generateMatchMap(setSize, nSets) {
     var width = setSize;
     var height = nSets;
     const map = Array.from({ length: width }, () => new Array(height).fill(0));
-    const occurrences = {};
+    const availableOptions = Array.from({ length: width }, () => new Array(nSets).fill(true));
 
     for (let i = 0; i < width; i++) {
         for (let j = 0; j < height; j++) {
-            let randomElement;
-            do {
-                // Generate random number within range
-                randomElement = Math.floor(Math.random() * nSets);
-
-                // Check if element has already occurred maxOccurrences times
-                if (!occurrences[randomElement] || occurrences[randomElement] < setSize) {
-                    // Add element to array and increment occurrence count
-                    map[i][j] = randomElement;
-                    occurrences[randomElement] = (occurrences[randomElement] || 0) + 1;
-                    break;
+            let options = [];
+            for (let k = 0; k < nSets; k++) {
+                if (availableOptions[i][k]) {
+                    options.push(k);
                 }
-            } while (true);
+            }
+            let randomIndex = Math.floor(Math.random() * options.length);
+            let randomElement = options[randomIndex];
+            map[i][j] = randomElement;
+            availableOptions[i][randomElement] = false;
         }
     }
 
     return map;
 }
 
+
 function generateFace() {
+    const features = [3, 6, 6];
     const face = [];
-    face.push(Math.floor(Math.random() * 3))
-    face.push(Math.floor(Math.random() * 6))
-    face.push(Math.floor(Math.random() * 6))
+    let bits = Math.floor(Math.random() * (2 ** 15));
+    features.forEach(max => {
+        face.push(bits % max);
+        bits = bits >> (max.toString(2).length - 1);
+    });
     return face;
 }
 
@@ -1074,7 +1207,13 @@ function setupLevel() {
     level_attempts = 0;
     level_flippedCards = 0;
     matchesMade = 0;
-    generateCardGrid(level_setSize, level_numSets, screenToWorldSpace(0.1, 0.13), screenToWorldSpace(0.8, 0.87));
+    level_lives = level_numSets * 2;
+
+    generateCardGrid(
+        level_setSize, level_numSets,
+        screenToWorldSpace(0.1, 0.18),
+        screenToWorldSpace(0.8, 0.82)
+    );
 }
 
 function checkForMatch() {
@@ -1098,6 +1237,8 @@ function checkForMatch() {
     if (IDsMatch) {
         level_flippedCards = 0;
         matchesMade++;
+    } else {
+        level_lives--;
     }
 }
 
@@ -1108,10 +1249,17 @@ var matchesMade = 0;
 
 var level_score = 0;
 var level_attempts = 0;
+var level_lives = level_numSets * 2;
 
 var level_timer = 0;
-const level_CLOCK = new UIText(screenToWorldSpace(0.8, 0.03), "60", "'Courier new'",
-    "white", "00:00", undefined, undefined, "right")
+const level_CLOCK = new UIText(screenToWorldSpace(0.9, 0.03), "60", "'Courier new'",
+    "white", "00:00", undefined, undefined, "right");
+
+const LIVES_TEXT = new UIText(screenToWorldSpace(0.9, 0.1), "60", "'Courier new'",
+    "white", "00:00", undefined, undefined, "right");
+
+const SCORE = new UIText(screenToWorldSpace(0.2, 0.1), "60", "'Courier new'",
+    "white", "00:00", undefined, undefined, "left");
 
 function logicUpdate() {
     var faceUpCards = 0;
@@ -1128,21 +1276,37 @@ function logicUpdate() {
         if (matchesMade === level_numSets) {
             winLevel();
         }
+        if (level_lives <= 0) {
+            loseLevel();
+        }
     }
     if (!gameIsPaused && !levelComplete) {
-        level_timer += deltaTime.delta;
+        level_timer += deltaTime.get('delta');
     }
-    var min = Math.floor(Math.floor(level_timer) / 60);
-    var sec = Math.floor(level_timer) % 60;
-    level_CLOCK.text = (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
+    const [min, sec] = calculateTime(level_timer);
+    level_CLOCK.text = `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
     UI.push(level_CLOCK);
 
-    level_score = 1000 - Math.floor(level_timer * 1) - (level_attempts - level_numSets) * 10;
-    if (level_score > personalData.levelScores[currentLevel - 1]) {
-        BACKGROUND_ELEMS[0].color = "#FFD700";
-    } else {
-        BACKGROUND_ELEMS[0].color = "#FFD70000";
-    }
+    level_score = calculateScore();
+    BACKGROUND_ELEMS[0].color = level_score > playerData.levelScores[currentLevel - 1] ? "#FFD700" : "#FFD70000";
+
+    LIVES_TEXT.text = `Lives: ${level_lives}`;
+    UI.push(LIVES_TEXT);
+
+    SCORE.text = `Score: ${level_score}`;
+    UI.push(SCORE);
+}
+
+function calculateTime(timer) {
+    const min = Math.floor(timer / 60);
+    const sec = Math.floor(timer % 60);
+    return [min, sec];
+}
+
+function calculateScore() {
+    const timeScore = Math.floor(level_timer) * 1;
+    const attemptsScore = Math.max((level_attempts - level_numSets), 0) * Math.round(100 / (level_setSize - 1));
+    return 1000 - (timeScore + attemptsScore);
 }
 
 function winLevel() {
@@ -1150,30 +1314,84 @@ function winLevel() {
     if (currentLevel === levelUnlock) {
         levelUnlock++;
     }
-    level_score = 1000 - Math.floor(level_timer * 1) - (level_attempts - level_numSets) * 10;
+    level_score = calculateScore();
 
     var index = currentLevel - 1;
-    if (personalData.levelScores.length >= currentLevel) {
-        const currentScore = personalData.levelScores[index];
-        const currentTime = personalData.levelTimes[index];
+    if (playerData.levelScores.length >= currentLevel) {
+        const currentScore = playerData.levelScores[index];
+        const currentTime = playerData.levelTimes[index];
         if (currentScore < level_score) {
-            personalData.levelScores[index] = level_score;
+            playerData.levelScores[index] = level_score;
         }
         if (currentTime > Math.floor(level_timer)) {
-            personalData.levelTimes[index] = Math.floor(level_timer);
+            playerData.levelTimes[index] = Math.floor(level_timer);
         }
     } else {
-        personalData.levelScores.push(level_score);
-        personalData.levelTimes.push(Math.floor(level_timer));
+        playerData.levelScores.push(level_score);
+        playerData.levelTimes.push(Math.floor(level_timer));
     }
 
-    personalData.unlock = levelUnlock
-    saveGameData(personalData);
+    playerData.unlock = levelUnlock
+    saveGameData(playerData);
 
+    setupScene();
+}
+
+function loseLevel() {
+    levelLost = true;
     setupScene();
 }
 
 window.onload = () => {
     init(); // initialize the game
     startFrames(); // start running frames
+}
+
+//========================================================
+//======================== MUSIC =========================
+// All music © 2023 Henry Grantham-Smith.
+
+var currentIndex = 0;
+
+async function playTracks() {
+    var tracks = await shuffleArray(["./songs/Bit Vibes.mp3", "./songs/Lofi Vibes.mp3", "./songs/Waltz Vibes.mp3"]);
+    // Set the duration of the break between tracks (in milliseconds)
+    var breakDuration = 2000;
+
+    // Create an array of Promises to preload the audio files
+    var preloadPromises = tracks.map(track => {
+        return new Promise(resolve => {
+            var audio = new Audio(track);
+            audio.addEventListener('canplaythrough', () => {
+                resolve();
+            });
+        });
+    });
+
+    // Wait for all the audio files to finish preloading
+    await Promise.all(preloadPromises);
+
+    // Create a loop to play each track
+    while (true) {
+        // Create a new audio element
+        var audio = new Audio(tracks[currentIndex]);
+
+        // Play the audio
+        audio.play();
+
+        // Wait for the audio to finish playing before scheduling the next track
+        await new Promise(resolve => audio.addEventListener('ended', resolve));
+
+        // Increment the current index to play the next track
+        currentIndex++;
+
+        // If the current index is equal to the length of the playlist,
+        // reset the index to 0 to start playing the playlist from the beginning
+        if (currentIndex == tracks.length) {
+            currentIndex = 0;
+        }
+
+        // Wait for the break duration before playing the next track
+        await new Promise(resolve => setTimeout(resolve, breakDuration));
+    }
 }

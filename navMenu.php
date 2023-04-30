@@ -75,7 +75,7 @@ if($_SESSION["registered"]){
           echo "
           <a class='nav-item nav-link' href='/leaderboard.php' name='leaderboard'>Leaderboard</a>
           <a class='nav-item nav-link' href='/registration.php' name='profile'>
-          <div class='avatar-container' margin='0px'>
+          <div class='avatar-container icon' margin='0px'>
             <img class='avatar-image-1' src=".$body." width='30px'/>
             <img class='avatar-image-2' src=".$eyes." width='30px'/>
             <img class='avatar-image-3' src=".$mouth." width='30px'/>
