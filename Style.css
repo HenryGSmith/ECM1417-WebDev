@@ -220,7 +220,14 @@ canvas {
     box-shadow: 5px 5px black;
     align-content: center;
     text-align: center;
+    width: fit-content;
+    height: fit-content;
+    position: absolute;
+    left: 50%;
+    -webkit-transform: translate(-50%, 0%);
+    transform: translate(-50%, 0%);
     padding: 1%;
+    margin-top: 1vh;
     color: white;
 }
 

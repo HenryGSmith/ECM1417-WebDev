@@ -29,7 +29,7 @@ if (!isset($_SESSION["registered"])) {
   // Load the data from the file and decode it
   $json_string = file_get_contents('./gameData.json');
   $player_data = json_decode($json_string)->data;
-
+  
   // Calculate the total score for each player
   foreach ($player_data as $player) {
     $player->totalScore = array_sum($player->levelScores);
@@ -112,7 +112,7 @@ if (!isset($_SESSION["registered"])) {
   ?>
 
   <div id="main">
-    <div class="center leaderboard">
+    <div class="leaderboard">
       <h3>Leaderboard</h3>
       <table>
         <thead>
@@ -157,21 +157,6 @@ if (!isset($_SESSION["registered"])) {
         </thead>
         <tbody>
           <?php
-          $json_string = file_get_contents('./gameData.json');
-          $player_data = json_decode($json_string)->data;
-          for ($i = 0; $i < count($player_data); $i++) {
-            $player_data[$i]->totalScore = array_sum($player_data[$i]->levelScores);
-          }
-
-          function compare_total_score($player1, $player2)
-          {
-            if ($player1->totalScore == $player2->totalScore) {
-              return 0;
-            }
-            return ($player1->totalScore > $player2->totalScore) ? -1 : 1;
-          }
-
-          usort($player_data, 'compare_total_score');
           $rank = 1;
           foreach ($player_data as $player) {
             ?>
