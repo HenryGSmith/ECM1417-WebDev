@@ -25,7 +25,7 @@ if (!isset($_SESSION['registered'])) {
 
   <?php include './navMenu.php' ?>
   <div id='main'>
-    <div class='center' id='reg-form'>
+    <div class='registration' id='reg-form'>
       <?php
       if ($_SESSION['registered']) {
         echo ('<h1>Update Profile</h1>');
@@ -45,9 +45,9 @@ if (!isset($_SESSION['registered'])) {
         </div>
 
         <div class='avatar-container' >
-          <img class='avatar-image-1' id='layer-1' src='./emojiAssets/body/green.png' width='500px' />
-          <img class='avatar-image-2' id='layer-2' src='./emojiAssets/eyes/closed.png' width='500px' />
-          <img class='avatar-image-3' id='layer-3' src='./emojiAssets/mouth/open.png' width='500px' />
+          <img class='avatar-image-1' id='layer-1' src='./emojiAssets/body/green.png' width='100%' />
+          <img class='avatar-image-2' id='layer-2' src='./emojiAssets/eyes/closed.png' width='100%' />
+          <img class='avatar-image-3' id='layer-3' src='./emojiAssets/mouth/open.png' width='100%' />
         </div>
 
         <div class='form-group tab-group'>
