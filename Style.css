@@ -21,7 +21,7 @@ h1 {
 }
 
 .bg-primary{
-    background-color: var(--celtic-blue) !important;
+    background-color: var(--dark-cyan) !important;
 }
 
 .nav-link {
@@ -118,7 +118,7 @@ html, body{
 
 /* game window */
 .GameDiv {
-    background-color: var(--paynes-gray);
+    background-color: var(--prussian-blue);
     box-shadow: 5px 5px;
     width: fit-content;
     height: fit-content;
